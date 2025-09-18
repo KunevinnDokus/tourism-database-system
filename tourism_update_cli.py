@@ -383,6 +383,248 @@ def create_sample_config(args):
     return 0
 
 
+def cmd_monitor(args):
+    """Advanced monitoring operations."""
+    from update_system.advanced_monitor import AdvancedMonitor, create_default_monitor_config
+
+    print("🔍 Advanced Monitoring System")
+    print("=" * 40)
+
+    config = create_orchestration_config(args)
+    monitor_config = create_default_monitor_config()
+    monitor = AdvancedMonitor(config.db_config, monitor_config)
+
+    if args.monitor_action == 'start':
+        print(f"Starting monitoring with {args.interval}s interval...")
+        monitor.start_monitoring(args.interval)
+        print("✅ Monitoring started (press Ctrl+C to stop)")
+        try:
+            import time
+            while True:
+                time.sleep(1)
+        except KeyboardInterrupt:
+            monitor.stop_monitoring()
+            print("\n⏹️ Monitoring stopped")
+
+    elif args.monitor_action == 'status':
+        health = monitor.get_system_health_summary()
+        print(f"Status: {health['status'].upper()}")
+        print(f"Message: {health['message']}")
+        print(f"Timestamp: {health['timestamp']}")
+
+        if health.get('metrics'):
+            metrics = health['metrics']
+            print(f"\n📊 Current Metrics:")
+            print(f"  CPU: {metrics['cpu_percent']:.1f}%")
+            print(f"  Memory: {metrics['memory_percent']:.1f}%")
+            print(f"  Disk: {metrics['disk_usage_percent']:.1f}%")
+            print(f"  DB Connections: {metrics['database_connections']}")
+
+    elif args.monitor_action == 'alerts':
+        alerts = monitor.get_active_alerts()
+        if not alerts:
+            print("No active alerts")
+        else:
+            print(f"Active Alerts ({len(alerts)}):")
+            for alert in alerts:
+                print(f"  🚨 {alert.severity.upper()}: {alert.component}")
+                print(f"     {alert.message}")
+                print(f"     Time: {alert.timestamp}")
+
+    elif args.monitor_action == 'metrics':
+        current_metrics = monitor.get_current_metrics()
+        if current_metrics:
+            print("Current System Metrics:")
+            print(f"  CPU Usage: {current_metrics.cpu_percent:.1f}%")
+            print(f"  Memory Usage: {current_metrics.memory_percent:.1f}%")
+            print(f"  Memory Available: {current_metrics.memory_available_gb:.1f} GB")
+            print(f"  Disk Usage: {current_metrics.disk_usage_percent:.1f}%")
+            print(f"  Disk Free: {current_metrics.disk_free_gb:.1f} GB")
+            print(f"  DB Connections: {current_metrics.database_connections}")
+            print(f"  DB Size: {current_metrics.database_size_gb:.2f} GB")
+            print(f"  Active Updates: {current_metrics.active_update_runs}")
+            print(f"  Error Rate (24h): {current_metrics.error_rate_24h:.1f}%")
+        else:
+            print("No metrics available")
+
+    return 0
+
+
+def cmd_performance(args):
+    """Performance optimization operations."""
+    from update_system.performance_optimizer import PerformanceOptimizer
+
+    print("⚡ Performance Optimization")
+    print("=" * 40)
+
+    config = create_orchestration_config(args)
+    optimizer = PerformanceOptimizer(config.db_config)
+
+    if args.perf_action == 'analyze':
+        print("Running performance analysis...")
+        result = optimizer.optimize_database()
+
+        print(f"\n📊 Analysis Results:")
+        print(f"Duration: {result['analysis_duration_ms']:.0f}ms")
+
+        if result['suggestions']:
+            print(f"\n💡 Optimization Suggestions:")
+            for suggestion in result['suggestions']:
+                print(f"  • {suggestion}")
+        else:
+            print("✅ No optimization suggestions - system performing well")
+
+    elif args.perf_action == 'cache-stats':
+        summary = optimizer.get_performance_summary()
+        cache_stats = summary['cache']
+
+        print("Cache Statistics:")
+        print(f"  Hit Rate: {cache_stats['hit_rate_percent']:.1f}%")
+        print(f"  Cache Size: {cache_stats['size']} items")
+        print(f"  Memory Usage: {cache_stats['memory_mb']:.1f} MB")
+        print(f"  Cache Hits: {cache_stats['hits']:,}")
+        print(f"  Cache Misses: {cache_stats['misses']:,}")
+
+    elif args.perf_action == 'clear-cache':
+        print("Clearing performance caches...")
+        optimizer.clear_caches()
+        print("✅ Caches cleared")
+
+    elif args.perf_action == 'optimize':
+        print("Starting database optimization...")
+        optimizer.start_background_tasks()
+        result = optimizer.optimize_database()
+
+        print(f"✅ Optimization completed")
+        if result['suggestions']:
+            print(f"Found {len(result['suggestions'])} optimization opportunities")
+
+    return 0
+
+
+def cmd_advanced_backup(args):
+    """Advanced backup and recovery operations."""
+    from update_system.backup_manager import BackupManager, create_default_backup_config
+
+    print("💾 Advanced Backup System")
+    print("=" * 40)
+
+    config = create_orchestration_config(args)
+    backup_config = create_default_backup_config()
+    backup_manager = BackupManager(config.db_config, backup_config)
+
+    if args.backup_action == 'create':
+        backup_type = args.type or 'full'
+        print(f"Creating {backup_type} backup...")
+
+        if backup_type == 'full':
+            result = backup_manager.create_full_backup(f"Manual {backup_type} backup")
+        else:
+            result = backup_manager.create_incremental_backup(f"Manual {backup_type} backup")
+
+        if result.success:
+            print(f"✅ Backup created successfully")
+            print(f"Backup ID: {result.backup_id}")
+            print(f"File: {result.file_path}")
+            print(f"Size: {result.file_size_bytes / (1024**2):.1f} MB")
+        else:
+            print(f"❌ Backup failed: {result.error_message}")
+            return 1
+
+    elif args.backup_action == 'list':
+        backups = backup_manager.list_backups(limit=20)
+        if not backups:
+            print("No backups found")
+        else:
+            print(f"Recent Backups ({len(backups)}):")
+            for backup in backups:
+                status = "✅" if backup['success'] else "❌"
+                size_mb = backup['file_size_bytes'] / (1024**2)
+                print(f"  {status} {backup['backup_id'][:12]}... ({backup['backup_type']}) - {size_mb:.1f}MB")
+                print(f"     Created: {backup['created_at']}")
+
+    elif args.backup_action == 'status':
+        status = backup_manager.get_backup_status()
+        print(f"Backup System: {'✅ Enabled' if status['backup_system_enabled'] else '❌ Disabled'}")
+        print(f"Total Backups: {status['total_backups']}")
+        print(f"Success Rate: {status['success_rate']:.1f}%")
+        print(f"Total Size: {status['total_size_gb']:.2f} GB")
+        print(f"Retention: {status['retention_days']} days")
+
+        if status['latest_backup']:
+            latest = status['latest_backup']
+            print(f"\nLatest Backup:")
+            print(f"  ID: {latest['backup_id']}")
+            print(f"  Type: {latest['type']}")
+            print(f"  Created: {latest['created_at']}")
+            print(f"  Status: {'✅' if latest['success'] else '❌'}")
+
+    elif args.backup_action == 'cleanup':
+        print("Cleaning up old backups...")
+        result = backup_manager.cleanup_old_backups()
+        print(f"✅ Removed {result['removed_count']} backups")
+        print(f"Freed {result['size_freed_gb']:.2f} GB")
+
+    elif args.backup_action == 'restore':
+        if not args.backup_id:
+            print("❌ Backup ID required for restore operation")
+            return 1
+
+        print(f"Restoring from backup: {args.backup_id}")
+        result = backup_manager.restore_from_backup(args.backup_id)
+
+        if result['success']:
+            print(f"✅ Restore completed successfully")
+            print(f"Target database: {result['target_database']}")
+        else:
+            print(f"❌ Restore failed: {result['error']}")
+            return 1
+
+    return 0
+
+
+def cmd_dashboard(args):
+    """Start monitoring dashboard."""
+    print("🖥️ Starting Tourism Database Dashboard")
+    print("=" * 50)
+    print(f"Host: {args.host}")
+    print(f"Port: {args.port}")
+    print("=" * 50)
+
+    try:
+        import sys
+        import os
+
+        # Add web_dashboard to path
+        dashboard_path = os.path.join(os.path.dirname(__file__), 'web_dashboard')
+        sys.path.insert(0, dashboard_path)
+
+        from app import app, socketio, initialize_services, emit_real_time_updates
+
+        # Initialize services
+        initialize_services()
+
+        # Start real-time updates
+        emit_real_time_updates()
+
+        print(f"🌐 Dashboard starting at http://{args.host}:{args.port}")
+        print("Press Ctrl+C to stop")
+
+        # Run the dashboard
+        socketio.run(app, host=args.host, port=args.port, debug=False)
+
+    except ImportError as e:
+        print(f"❌ Dashboard dependencies not available: {e}")
+        print("Install dashboard dependencies: pip install flask flask-socketio")
+        return 1
+    except KeyboardInterrupt:
+        print("\n⏹️ Dashboard stopped")
+        return 0
+    except Exception as e:
+        print(f"❌ Dashboard failed to start: {e}")
+        return 1
+
+
 def main():
     """Main CLI entry point."""
     parser = argparse.ArgumentParser(
@@ -402,8 +644,25 @@ Examples:
   # Check system status
   python3 tourism_update_cli.py status
 
-  # Create backup
-  python3 tourism_update_cli.py backup
+  # Advanced monitoring
+  python3 tourism_update_cli.py monitor start --interval 30
+  python3 tourism_update_cli.py monitor alerts
+
+  # Performance optimization
+  python3 tourism_update_cli.py performance analyze
+  python3 tourism_update_cli.py performance cache-stats
+
+  # Advanced backup operations
+  python3 tourism_update_cli.py backup create --type full
+  python3 tourism_update_cli.py backup list
+  python3 tourism_update_cli.py backup restore --backup-id <backup-id>
+
+  # Downloads management
+  python3 tourism_update_cli.py downloads list
+  python3 tourism_update_cli.py downloads cleanup --days-to-keep 30
+
+  # Start monitoring dashboard
+  python3 tourism_update_cli.py dashboard --port 5000
 
   # Generate sample config
   python3 tourism_update_cli.py create-config --output my_config.json
@@ -485,10 +744,10 @@ Examples:
         help='TTL source URL to check'
     )
 
-    # Backup command
-    backup_parser = subparsers.add_parser(
-        'backup',
-        help='Create database backup'
+    # Legacy backup command (redirect to advanced backup)
+    legacy_backup_parser = subparsers.add_parser(
+        'simple-backup',
+        help='Simple database backup (legacy)'
     )
 
     # Create config command
@@ -518,6 +777,74 @@ Examples:
         help='Days to keep files for cleanup action (default: 30)'
     )
 
+    # Monitor command
+    monitor_parser = subparsers.add_parser(
+        'monitor',
+        help='Advanced monitoring and alerting'
+    )
+    monitor_parser.add_argument(
+        'monitor_action',
+        choices=['start', 'stop', 'status', 'alerts', 'metrics'],
+        help='Monitoring action to perform'
+    )
+    monitor_parser.add_argument(
+        '--interval',
+        type=int,
+        default=60,
+        help='Monitoring interval in seconds (default: 60)'
+    )
+
+    # Performance command
+    perf_parser = subparsers.add_parser(
+        'performance',
+        help='Performance optimization and analysis'
+    )
+    perf_parser.add_argument(
+        'perf_action',
+        choices=['analyze', 'optimize', 'cache-stats', 'clear-cache'],
+        help='Performance action to perform'
+    )
+
+    # Backup command (enhanced)
+    backup_parser = subparsers.add_parser(
+        'backup',
+        help='Advanced backup and recovery operations'
+    )
+    backup_parser.add_argument(
+        'backup_action',
+        choices=['create', 'list', 'restore', 'cleanup', 'status'],
+        default='create',
+        nargs='?',
+        help='Backup action (default: create)'
+    )
+    backup_parser.add_argument(
+        '--backup-id',
+        help='Backup ID for restore operations'
+    )
+    backup_parser.add_argument(
+        '--type',
+        choices=['full', 'incremental'],
+        default='full',
+        help='Backup type (default: full)'
+    )
+
+    # Dashboard command
+    dashboard_parser = subparsers.add_parser(
+        'dashboard',
+        help='Start monitoring dashboard'
+    )
+    dashboard_parser.add_argument(
+        '--host',
+        default='0.0.0.0',
+        help='Dashboard host (default: 0.0.0.0)'
+    )
+    dashboard_parser.add_argument(
+        '--port',
+        type=int,
+        default=5000,
+        help='Dashboard port (default: 5000)'
+    )
+
     # Parse arguments
     args = parser.parse_args()
 
@@ -532,9 +859,15 @@ Examples:
     elif args.command == 'status':
         return cmd_status(args)
     elif args.command == 'backup':
-        return cmd_backup(args)
+        return cmd_advanced_backup(args)
     elif args.command == 'downloads':
         return cmd_downloads(args)
+    elif args.command == 'monitor':
+        return cmd_monitor(args)
+    elif args.command == 'performance':
+        return cmd_performance(args)
+    elif args.command == 'dashboard':
+        return cmd_dashboard(args)
     elif args.command == 'create-config':
         return create_sample_config(args)
     else:
