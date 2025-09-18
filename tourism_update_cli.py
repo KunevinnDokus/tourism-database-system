@@ -272,6 +272,76 @@ def cmd_backup(args):
         return 1
 
 
+def cmd_downloads(args):
+    """Manage downloaded TTL files."""
+    from update_system.data_source_manager import DataSourceManager
+
+    print("📁 Tourism TTL Downloads Management")
+    print("=" * 40)
+
+    if args.downloads_action == 'list':
+        # List all downloaded files
+        files = DataSourceManager.list_downloaded_files()
+
+        if not files:
+            print("No downloaded files found in downloads/ directory")
+            return 0
+
+        print(f"Found {len(files)} downloaded file(s):")
+        print()
+
+        for i, file_info in enumerate(files, 1):
+            print(f"{i}. {file_info['filename']}")
+            print(f"   Size: {file_info['size_mb']:.1f} MB")
+            print(f"   Downloaded: {file_info['download_time'].strftime('%Y-%m-%d %H:%M:%S')}")
+            print(f"   Hash: {file_info['file_hash'][:16]}...")
+            print()
+
+    elif args.downloads_action == 'latest':
+        # Show latest file info
+        latest = DataSourceManager.get_latest_downloaded_file()
+
+        if not latest:
+            print("No downloaded files found")
+            return 0
+
+        print("Latest downloaded file:")
+        print(f"  File: {latest['filename']}")
+        print(f"  Size: {latest['size_mb']:.1f} MB")
+        print(f"  Downloaded: {latest['download_time'].strftime('%Y-%m-%d %H:%M:%S')}")
+        print(f"  Path: {latest['filepath']}")
+        print(f"  Hash: {latest['file_hash']}")
+
+    elif args.downloads_action == 'cleanup':
+        # Clean up old files
+        days_to_keep = getattr(args, 'days_to_keep', 30)
+        removed = DataSourceManager.cleanup_old_downloads(days_to_keep)
+
+        print(f"Cleaned up {removed} file(s) older than {days_to_keep} days")
+
+    elif args.downloads_action == 'summary':
+        # Show downloads summary
+        dsm_config = {'download_timeout': 60, 'max_retries': 3}
+
+        with DataSourceManager(dsm_config) as dsm:
+            summary = dsm.get_downloads_summary()
+
+            print(f"Total Files: {summary['total_files']}")
+            print(f"Total Size: {summary['total_size_mb']:.1f} MB")
+
+            if summary['latest_download']:
+                print(f"Latest Download: {summary['latest_download']}")
+            if summary['oldest_download']:
+                print(f"Oldest Download: {summary['oldest_download']}")
+
+            if summary.get('files'):
+                print("\nRecent Files:")
+                for file_info in summary['files']:
+                    print(f"  {file_info['filename']} ({file_info['size_mb']:.1f} MB)")
+
+    return 0
+
+
 def create_sample_config(args):
     """Create a sample configuration file."""
     config = {
@@ -431,6 +501,23 @@ Examples:
         help='Output file path (default: tourism_update_config.json)'
     )
 
+    # Downloads command
+    downloads_parser = subparsers.add_parser(
+        'downloads',
+        help='Manage downloaded TTL files'
+    )
+    downloads_parser.add_argument(
+        'downloads_action',
+        choices=['list', 'latest', 'cleanup', 'summary'],
+        help='Action to perform on downloads'
+    )
+    downloads_parser.add_argument(
+        '--days-to-keep',
+        type=int,
+        default=30,
+        help='Days to keep files for cleanup action (default: 30)'
+    )
+
     # Parse arguments
     args = parser.parse_args()
 
@@ -446,6 +533,8 @@ Examples:
         return cmd_status(args)
     elif args.command == 'backup':
         return cmd_backup(args)
+    elif args.command == 'downloads':
+        return cmd_downloads(args)
     elif args.command == 'create-config':
         return create_sample_config(args)
     else:

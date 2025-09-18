@@ -201,8 +201,8 @@ class UpdateOrchestrator:
             }
 
             with DataSourceManager(dsm_config) as dsm:
-                # Download latest file
-                file_path, file_hash, file_size = dsm.download_latest_ttl()
+                # Download latest file (save to permanent downloads folder)
+                file_path, file_hash, file_size = dsm.download_latest_ttl(save_to_downloads=True)
 
                 # Check for changes
                 comparison = dsm.compare_file_metadata(file_hash, file_size)

@@ -170,7 +170,9 @@ The update system consists of 4 integrated phases:
 #### Phase 2: Data Source & Download Management
 - **TTL File Handling**: Download, validation, and integrity checking
 - **Metadata Tracking**: File hash comparison and change detection
-- **Temporary Storage**: Safe file management with automatic cleanup
+- **Permanent Storage**: Downloads saved to `downloads/` directory with timestamps
+- **File Organization**: Automatic timestamped naming (`toeristische-attracties_YYYYMMDD-HHMMSS.ttl`)
+- **Download Management**: List, cleanup, and analyze downloaded files
 - **URL Validation**: Source availability checking with retry logic
 
 #### Phase 3: Change Detection Engine
@@ -197,7 +199,8 @@ The update system consists of 4 integrated phases:
 **`update_system/data_source_manager.py`**
 - Handles TTL file downloads and validation
 - Compares file metadata to detect changes
-- Manages temporary file storage and cleanup
+- Manages permanent downloads storage with timestamped files
+- Provides downloads management utilities (list, cleanup, summary)
 
 **`update_system/change_detector.py`**
 - Creates temporary databases from TTL files
@@ -239,9 +242,9 @@ config.update({
     'password': 'your_password'
 })
 
-# Download and validate new TTL data
+# Download and validate new TTL data (saves to downloads/ directory)
 with DataSourceManager(config) as dsm:
-    file_path, file_hash, file_size = dsm.download_latest_ttl()
+    file_path, file_hash, file_size = dsm.download_latest_ttl(save_to_downloads=True)
 
     # Check if file has changed
     if dsm.compare_file_metadata(file_hash, file_size)['has_changes']:
@@ -293,6 +296,60 @@ with UpdateProcessor(config) as processor:
     print(f"Run status: {run_stats['status']}")
     print(f"Records processed: {run_stats['total_changes']}")
 ```
+
+### Command Line Interface
+
+The update system includes a comprehensive CLI for managing all operations:
+
+#### Update Commands
+```bash
+# Full update workflow
+python3 tourism_update_cli.py update
+
+# Update with custom configuration
+python3 tourism_update_cli.py update --config config.json
+
+# Update with custom database
+python3 tourism_update_cli.py update --db-name my_db --db-user myuser
+
+# Validation-only (no changes applied)
+python3 tourism_update_cli.py validate --source-url https://example.com/data.ttl
+```
+
+#### Downloads Management
+```bash
+# List all downloaded files
+python3 tourism_update_cli.py downloads list
+
+# Show latest download info
+python3 tourism_update_cli.py downloads latest
+
+# Get downloads summary
+python3 tourism_update_cli.py downloads summary
+
+# Clean up files older than 30 days
+python3 tourism_update_cli.py downloads cleanup --days-to-keep 30
+```
+
+#### System Operations
+```bash
+# Check system status
+python3 tourism_update_cli.py status
+
+# Create database backup
+python3 tourism_update_cli.py backup
+
+# Generate sample configuration
+python3 tourism_update_cli.py create-config --output my_config.json
+```
+
+#### Download File Organization
+
+Downloaded TTL files are automatically organized in the `downloads/` directory:
+- **File naming**: `toeristische-attracties_YYYYMMDD-HHMMSS.ttl`
+- **Automatic timestamps**: Files include download date and time
+- **Historical tracking**: All downloads preserved for comparison
+- **Size management**: Each file is approximately 550MB
 
 ### Update System Configuration
 

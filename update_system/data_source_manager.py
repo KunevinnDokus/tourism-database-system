@@ -10,8 +10,8 @@ import hashlib
 import requests
 import tempfile
 import shutil
-from datetime import datetime
-from typing import Dict, Optional, Tuple, Any
+from datetime import datetime, timedelta
+from typing import Dict, Optional, Tuple, Any, List
 from urllib.parse import urlparse
 import logging
 
@@ -48,13 +48,14 @@ class DataSourceManager:
             shutil.rmtree(self.temp_dir)
             logger.info(f"Cleaned up temporary directory: {self.temp_dir}")
 
-    def download_latest_ttl(self, url: str = None, target_filename: str = None) -> Tuple[str, str, int]:
+    def download_latest_ttl(self, url: str = None, target_filename: str = None, save_to_downloads: bool = True) -> Tuple[str, str, int]:
         """
         Download the latest TTL file from the tourism data source.
 
         Args:
             url: Custom URL to download from (uses config default if None)
             target_filename: Custom filename (auto-generated if None)
+            save_to_downloads: If True, save to permanent downloads folder with timestamp
 
         Returns:
             Tuple of (file_path, file_hash, file_size)
@@ -71,13 +72,26 @@ class DataSourceManager:
 
         if not target_filename:
             # Generate filename with timestamp
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            parsed_url = urlparse(download_url)
-            base_name = os.path.basename(parsed_url.path) or "tourism_data.ttl"
-            name, ext = os.path.splitext(base_name)
-            target_filename = f"{name}_{timestamp}{ext}"
+            timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+            if save_to_downloads:
+                # Use standard name for permanent downloads
+                target_filename = f"toeristische-attracties_{timestamp}.ttl"
+            else:
+                # Use URL-based name for temporary downloads
+                parsed_url = urlparse(download_url)
+                base_name = os.path.basename(parsed_url.path) or "tourism_data.ttl"
+                name, ext = os.path.splitext(base_name)
+                target_filename = f"{name}_{timestamp}{ext}"
 
-        target_path = os.path.join(self.temp_dir, target_filename)
+        # Determine target directory
+        if save_to_downloads:
+            # Save to permanent downloads directory
+            downloads_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'downloads')
+            os.makedirs(downloads_dir, exist_ok=True)
+            target_path = os.path.join(downloads_dir, target_filename)
+        else:
+            # Save to temporary directory
+            target_path = os.path.join(self.temp_dir, target_filename)
 
         logger.info(f"Starting download from: {download_url}")
         logger.info(f"Target file: {target_path}")
@@ -365,3 +379,130 @@ class DataSourceManager:
             result['error_message'] = str(e)
 
         return result
+
+    @staticmethod
+    def get_downloads_directory() -> str:
+        """Get the path to the downloads directory."""
+        project_root = os.path.dirname(os.path.dirname(__file__))
+        downloads_dir = os.path.join(project_root, 'downloads')
+        os.makedirs(downloads_dir, exist_ok=True)
+        return downloads_dir
+
+    @staticmethod
+    def list_downloaded_files() -> List[Dict[str, Any]]:
+        """
+        List all downloaded TTL files in the downloads directory.
+
+        Returns:
+            List of file information dictionaries sorted by date (newest first)
+        """
+        downloads_dir = DataSourceManager.get_downloads_directory()
+        files = []
+
+        for filename in os.listdir(downloads_dir):
+            if filename.endswith('.ttl') and 'toeristische-attracties' in filename:
+                filepath = os.path.join(downloads_dir, filename)
+                if os.path.isfile(filepath):
+                    stat = os.stat(filepath)
+
+                    # Extract timestamp from filename
+                    timestamp_str = None
+                    if '_' in filename:
+                        parts = filename.split('_')
+                        if len(parts) >= 2:
+                            timestamp_part = parts[1].replace('.ttl', '')
+                            try:
+                                # Parse timestamp from filename (YYYYMMDD-HHMMSS)
+                                timestamp_str = timestamp_part
+                                file_datetime = datetime.strptime(timestamp_part, '%Y%m%d-%H%M%S')
+                            except ValueError:
+                                file_datetime = datetime.fromtimestamp(stat.st_mtime)
+                    else:
+                        file_datetime = datetime.fromtimestamp(stat.st_mtime)
+
+                    files.append({
+                        'filename': filename,
+                        'filepath': filepath,
+                        'size_bytes': stat.st_size,
+                        'size_mb': stat.st_size / (1024 * 1024),
+                        'modified_time': datetime.fromtimestamp(stat.st_mtime),
+                        'download_time': file_datetime,
+                        'timestamp_str': timestamp_str,
+                        'file_hash': DataSourceManager.calculate_file_hash(filepath)
+                    })
+
+        # Sort by download time (newest first)
+        files.sort(key=lambda x: x['download_time'], reverse=True)
+        return files
+
+    @staticmethod
+    def get_latest_downloaded_file() -> Optional[Dict[str, Any]]:
+        """
+        Get information about the most recently downloaded file.
+
+        Returns:
+            File info dictionary or None if no files found
+        """
+        files = DataSourceManager.list_downloaded_files()
+        return files[0] if files else None
+
+    @staticmethod
+    def cleanup_old_downloads(days_to_keep: int = 30) -> int:
+        """
+        Remove downloaded files older than specified days.
+
+        Args:
+            days_to_keep: Number of days to keep files (default: 30)
+
+        Returns:
+            Number of files removed
+        """
+        downloads_dir = DataSourceManager.get_downloads_directory()
+        cutoff_date = datetime.now() - timedelta(days=days_to_keep)
+        removed_count = 0
+
+        for filename in os.listdir(downloads_dir):
+            if filename.endswith('.ttl') and 'toeristische-attracties' in filename:
+                filepath = os.path.join(downloads_dir, filename)
+                if os.path.isfile(filepath):
+                    file_time = datetime.fromtimestamp(os.path.getmtime(filepath))
+                    if file_time < cutoff_date:
+                        os.remove(filepath)
+                        removed_count += 1
+                        logger.info(f"Removed old download: {filename}")
+
+        return removed_count
+
+    def get_downloads_summary(self) -> Dict[str, Any]:
+        """
+        Get summary information about downloaded files.
+
+        Returns:
+            Dictionary with download statistics
+        """
+        files = self.list_downloaded_files()
+
+        if not files:
+            return {
+                'total_files': 0,
+                'total_size_mb': 0,
+                'latest_download': None,
+                'oldest_download': None
+            }
+
+        total_size = sum(f['size_bytes'] for f in files)
+
+        return {
+            'total_files': len(files),
+            'total_size_mb': total_size / (1024 * 1024),
+            'latest_download': files[0]['download_time'].isoformat(),
+            'oldest_download': files[-1]['download_time'].isoformat(),
+            'files': [
+                {
+                    'filename': f['filename'],
+                    'size_mb': f['size_mb'],
+                    'download_time': f['download_time'].isoformat()
+                }
+                for f in files[:5]  # Show latest 5 files
+            ]
+        }
