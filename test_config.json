@@ -1,0 +1,28 @@
+{
+  "database": {
+    "host": "localhost",
+    "port": 5432,
+    "database": "tourism_flanders_corrected",
+    "user": "postgres",
+    "password": ""
+  },
+  "source": {
+    "url": "https://linked.toerismevlaanderen.be/files/02a71541-9434-11f0-b486-e14b0db176db/download?name=toeristische-attracties.ttl",
+    "download_timeout": 300,
+    "max_retries": 3
+  },
+  "processing": {
+    "batch_size": 100,
+    "dry_run_first": true,
+    "force_update": false
+  },
+  "monitoring": {
+    "enable_notifications": false,
+    "notification_config": {}
+  },
+  "maintenance": {
+    "backup_enabled": true,
+    "backup_retention_days": 30,
+    "temp_cleanup": true
+  }
+}
