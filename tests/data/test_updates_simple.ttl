@@ -1,0 +1,212 @@
+@prefix logies: <https://data.vlaanderen.be/ns/logies#> .
+@prefix locn: <http://www.w3.org/ns/locn#> .
+@prefix schema: <http://schema.org/> .
+@prefix adms: <http://www.w3.org/ns/adms#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix geo: <http://www.w3.org/2003/01/geo/wgs84_pos#> .
+
+# Simple CRUD Test TTL
+# Tests basic Create, Update, Delete operations
+
+# =====================================================
+# UPDATES (Modify existing entities)
+# =====================================================
+
+# Update: Test Hotel Brussels - Change description and sleeping places
+<https://data.vlaanderen.be/id/logies/test-hotel-1> a logies:Logies ;
+    rdfs:label "Test Hotel Brussels"@nl ;
+    schema:description "Newly renovated comfortable hotel in the heart of Brussels"@nl ;
+    logies:aantalSlaapplaatsen "6"^^<http://www.w3.org/2001/XMLSchema#int> ;
+    logies:aantalVerhuurEenheden "1"^^<http://www.w3.org/2001/XMLSchema#int> ;
+    locn:address <https://data.vlaanderen.be/id/adres/test-address-1> ;
+    schema:contactPoint <https://data.vlaanderen.be/id/contactpunt/test-contact-1> ;
+    locn:location <https://data.vlaanderen.be/id/geometrie/test-geometry-1> ;
+    adms:identifier <https://data.vlaanderen.be/id/identificator/test-identifier-1> .
+
+# Update: Cozy B&B Antwerp - Change name and contact info
+<https://data.vlaanderen.be/id/logies/test-bnb-1> a logies:Logies ;
+    rdfs:label "Cozy Boutique B&B Antwerp"@nl ;
+    schema:description "Charming bed and breakfast in historic Antwerp"@nl ;
+    logies:aantalSlaapplaatsen "2"^^<http://www.w3.org/2001/XMLSchema#int> ;
+    logies:aantalVerhuurEenheden "1"^^<http://www.w3.org/2001/XMLSchema#int> ;
+    locn:address <https://data.vlaanderen.be/id/adres/test-address-2> ;
+    schema:contactPoint <https://data.vlaanderen.be/id/contactpunt/test-contact-2-updated> ;
+    locn:location <https://data.vlaanderen.be/id/geometrie/test-geometry-2> ;
+    adms:identifier <https://data.vlaanderen.be/id/identificator/test-identifier-2> .
+
+# Update: Budget Hostel Bruges - Increase capacity
+<https://data.vlaanderen.be/id/logies/test-hostel-1> a logies:Logies ;
+    rdfs:label "Budget Hostel Bruges"@nl ;
+    schema:description "Expanded affordable accommodation for backpackers"@nl ;
+    logies:aantalSlaapplaatsen "12"^^<http://www.w3.org/2001/XMLSchema#int> ;
+    logies:aantalVerhuurEenheden "3"^^<http://www.w3.org/2001/XMLSchema#int> ;
+    locn:address <https://data.vlaanderen.be/id/adres/test-address-4> ;
+    schema:contactPoint <https://data.vlaanderen.be/id/contactpunt/test-contact-4> ;
+    locn:location <https://data.vlaanderen.be/id/geometrie/test-geometry-4> ;
+    adms:identifier <https://data.vlaanderen.be/id/identificator/test-identifier-4> .
+
+# =====================================================
+# CREATES (New entities)
+# =====================================================
+
+# New: Eco Lodge Mechelen
+<https://data.vlaanderen.be/id/logies/test-ecolodge-1> a logies:Logies ;
+    rdfs:label "Eco Lodge Mechelen"@nl ;
+    schema:description "Sustainable accommodation with solar panels and organic garden"@nl ;
+    logies:aantalSlaapplaatsen "4"^^<http://www.w3.org/2001/XMLSchema#int> ;
+    logies:aantalVerhuurEenheden "1"^^<http://www.w3.org/2001/XMLSchema#int> ;
+    locn:address <https://data.vlaanderen.be/id/adres/test-address-new-1> ;
+    schema:contactPoint <https://data.vlaanderen.be/id/contactpunt/test-contact-new-1> ;
+    locn:location <https://data.vlaanderen.be/id/geometrie/test-geometry-new-1> ;
+    adms:identifier <https://data.vlaanderen.be/id/identificator/test-identifier-new-1> .
+
+# New: City Loft Hasselt
+<https://data.vlaanderen.be/id/logies/test-loft-1> a logies:Logies ;
+    rdfs:label "City Loft Hasselt"@nl ;
+    schema:description "Modern industrial-style loft in city center"@nl ;
+    logies:aantalSlaapplaatsen "2"^^<http://www.w3.org/2001/XMLSchema#int> ;
+    logies:aantalVerhuurEenheden "1"^^<http://www.w3.org/2001/XMLSchema#int> ;
+    locn:address <https://data.vlaanderen.be/id/adres/test-address-new-2> ;
+    schema:contactPoint <https://data.vlaanderen.be/id/contactpunt/test-contact-new-2> ;
+    locn:location <https://data.vlaanderen.be/id/geometrie/test-geometry-new-2> ;
+    adms:identifier <https://data.vlaanderen.be/id/identificator/test-identifier-new-2> .
+
+# =====================================================
+# UPDATED AND NEW ADDRESSES
+# =====================================================
+
+# Keep existing addresses (unchanged)
+<https://data.vlaanderen.be/id/adres/test-address-1> a locn:Address ;
+    locn:thoroughfare "Grand Place" ;
+    adms:addressId "1" ;
+    locn:postCode "1000" ;
+    locn:adminUnitL2 "Brussels" ;
+    locn:fullAddress "Grand Place 1, 1000 Brussels" .
+
+<https://data.vlaanderen.be/id/adres/test-address-2> a locn:Address ;
+    locn:thoroughfare "Grote Markt" ;
+    adms:addressId "15" ;
+    locn:postCode "2000" ;
+    locn:adminUnitL2 "Antwerpen" ;
+    locn:fullAddress "Grote Markt 15, 2000 Antwerpen" .
+
+<https://data.vlaanderen.be/id/adres/test-address-4> a locn:Address ;
+    locn:thoroughfare "Langestraat" ;
+    adms:addressId "8" ;
+    locn:postCode "8000" ;
+    locn:adminUnitL2 "Brugge" ;
+    locn:fullAddress "Langestraat 8, 8000 Brugge" .
+
+# New addresses for new accommodations
+<https://data.vlaanderen.be/id/adres/test-address-new-1> a locn:Address ;
+    locn:thoroughfare "Grote Markt" ;
+    adms:addressId "3" ;
+    locn:postCode "2800" ;
+    locn:adminUnitL2 "Mechelen" ;
+    locn:fullAddress "Grote Markt 3, 2800 Mechelen" .
+
+<https://data.vlaanderen.be/id/adres/test-address-new-2> a locn:Address ;
+    locn:thoroughfare "Kapelstraat" ;
+    adms:addressId "12" ;
+    locn:postCode "3500" ;
+    locn:adminUnitL2 "Hasselt" ;
+    locn:fullAddress "Kapelstraat 12, 3500 Hasselt" .
+
+# =====================================================
+# UPDATED AND NEW CONTACT POINTS
+# =====================================================
+
+# Keep existing contact points (unchanged)
+<https://data.vlaanderen.be/id/contactpunt/test-contact-1> a schema:ContactPoint ;
+    schema:email "info@testhotelbrussels.be" ;
+    schema:telephone "+32 2 123 4567" ;
+    schema:url "https://testhotelbrussels.be" ;
+    schema:contactType "reception" .
+
+<https://data.vlaanderen.be/id/contactpunt/test-contact-4> a schema:ContactPoint ;
+    schema:email "stay@budgethostelbruges.be" ;
+    schema:telephone "+32 50 456 7890" ;
+    schema:url "https://budgethostelbruges.be" ;
+    schema:contactType "reception" .
+
+# Updated contact point for B&B
+<https://data.vlaanderen.be/id/contactpunt/test-contact-2-updated> a schema:ContactPoint ;
+    schema:email "info@cozyboutiquebnb.be" ;
+    schema:telephone "+32 3 234 9999" ;
+    schema:url "https://cozyboutiquebnb.be" ;
+    schema:contactType "host" .
+
+# New contact points for new accommodations
+<https://data.vlaanderen.be/id/contactpunt/test-contact-new-1> a schema:ContactPoint ;
+    schema:email "reservations@ecolodgemechelen.be" ;
+    schema:telephone "+32 15 123 4567" ;
+    schema:url "https://ecolodgemechelen.be" ;
+    schema:contactType "reception" .
+
+<https://data.vlaanderen.be/id/contactpunt/test-contact-new-2> a schema:ContactPoint ;
+    schema:email "booking@citylofthasselt.be" ;
+    schema:telephone "+32 11 234 5678" ;
+    schema:url "https://citylofthasselt.be" ;
+    schema:contactType "booking" .
+
+# =====================================================
+# UPDATED AND NEW GEOMETRIES
+# =====================================================
+
+# Keep existing geometries (unchanged)
+<https://data.vlaanderen.be/id/geometrie/test-geometry-1> a locn:Geometry ;
+    geo:lat "50.8476"^^<http://www.w3.org/2001/XMLSchema#decimal> ;
+    geo:long "4.3572"^^<http://www.w3.org/2001/XMLSchema#decimal> ;
+    locn:geometryType "Point" .
+
+<https://data.vlaanderen.be/id/geometrie/test-geometry-2> a locn:Geometry ;
+    geo:lat "51.2194"^^<http://www.w3.org/2001/XMLSchema#decimal> ;
+    geo:long "4.4025"^^<http://www.w3.org/2001/XMLSchema#decimal> ;
+    locn:geometryType "Point" .
+
+<https://data.vlaanderen.be/id/geometrie/test-geometry-4> a locn:Geometry ;
+    geo:lat "51.2093"^^<http://www.w3.org/2001/XMLSchema#decimal> ;
+    geo:long "3.2247"^^<http://www.w3.org/2001/XMLSchema#decimal> ;
+    locn:geometryType "Point" .
+
+# New geometries for new accommodations
+<https://data.vlaanderen.be/id/geometrie/test-geometry-new-1> a locn:Geometry ;
+    geo:lat "51.0280"^^<http://www.w3.org/2001/XMLSchema#decimal> ;
+    geo:long "4.4778"^^<http://www.w3.org/2001/XMLSchema#decimal> ;
+    locn:geometryType "Point" .
+
+<https://data.vlaanderen.be/id/geometrie/test-geometry-new-2> a locn:Geometry ;
+    geo:lat "50.9301"^^<http://www.w3.org/2001/XMLSchema#decimal> ;
+    geo:long "5.3378"^^<http://www.w3.org/2001/XMLSchema#decimal> ;
+    locn:geometryType "Point" .
+
+# =====================================================
+# UPDATED AND NEW IDENTIFIERS
+# =====================================================
+
+# Keep existing identifiers (unchanged)
+<https://data.vlaanderen.be/id/identificator/test-identifier-1> a adms:Identifier ;
+    skos:notation "TVL001" ;
+    adms:schemeAgency "Tourism Flanders" .
+
+<https://data.vlaanderen.be/id/identificator/test-identifier-2> a adms:Identifier ;
+    skos:notation "TVL002" ;
+    adms:schemeAgency "Tourism Flanders" .
+
+<https://data.vlaanderen.be/id/identificator/test-identifier-4> a adms:Identifier ;
+    skos:notation "TVL004" ;
+    adms:schemeAgency "Tourism Flanders" .
+
+# New identifiers for new accommodations
+<https://data.vlaanderen.be/id/identificator/test-identifier-new-1> a adms:Identifier ;
+    skos:notation "TVL006" ;
+    adms:schemeAgency "Tourism Flanders" .
+
+<https://data.vlaanderen.be/id/identificator/test-identifier-new-2> a adms:Identifier ;
+    skos:notation "TVL007" ;
+    adms:schemeAgency "Tourism Flanders" .
+
+# Note: Missing entities from baseline represent DELETES:
+# - test-apartment-1 and test-villa-1 (logies)
+# - Their associated addresses, contacts, geometries, identifiers

@@ -1,0 +1,231 @@
+{
+  "test_updates_simple": {
+    "description": "Simple CRUD operations test scenario",
+    "expected_changes": {
+      "logies": {
+        "inserts": [
+          {
+            "id": "66666666-6666-6666-6666-666666666666",
+            "uri": "https://data.vlaanderen.be/id/logies/test-ecolodge-1",
+            "name": "Eco Lodge Mechelen",
+            "description": "Sustainable accommodation with solar panels and organic garden",
+            "sleeping_places": 4,
+            "rental_units_count": 1
+          },
+          {
+            "id": "77777777-7777-7777-7777-777777777777",
+            "uri": "https://data.vlaanderen.be/id/logies/test-loft-1",
+            "name": "City Loft Hasselt",
+            "description": "Modern industrial-style loft in city center",
+            "sleeping_places": 2,
+            "rental_units_count": 1
+          }
+        ],
+        "updates": [
+          {
+            "id": "11111111-1111-1111-1111-111111111111",
+            "uri": "https://data.vlaanderen.be/id/logies/test-hotel-1",
+            "changes": {
+              "description": {
+                "old": "Comfortable hotel in the heart of Brussels",
+                "new": "Newly renovated comfortable hotel in the heart of Brussels"
+              },
+              "sleeping_places": {
+                "old": 4,
+                "new": 6
+              }
+            }
+          },
+          {
+            "id": "22222222-2222-2222-2222-222222222222",
+            "uri": "https://data.vlaanderen.be/id/logies/test-bnb-1",
+            "changes": {
+              "name": {
+                "old": "Cozy B&B Antwerp",
+                "new": "Cozy Boutique B&B Antwerp"
+              }
+            }
+          },
+          {
+            "id": "44444444-4444-4444-4444-444444444444",
+            "uri": "https://data.vlaanderen.be/id/logies/test-hostel-1",
+            "changes": {
+              "description": {
+                "old": "Affordable accommodation for backpackers",
+                "new": "Expanded affordable accommodation for backpackers"
+              },
+              "sleeping_places": {
+                "old": 8,
+                "new": 12
+              },
+              "rental_units_count": {
+                "old": 2,
+                "new": 3
+              }
+            }
+          }
+        ],
+        "deletes": [
+          {
+            "id": "33333333-3333-3333-3333-333333333333",
+            "uri": "https://data.vlaanderen.be/id/logies/test-apartment-1",
+            "name": "Modern Apartment Ghent"
+          },
+          {
+            "id": "55555555-5555-5555-5555-555555555555",
+            "uri": "https://data.vlaanderen.be/id/logies/test-villa-1",
+            "name": "Luxury Villa Leuven"
+          }
+        ]
+      },
+      "addresses": {
+        "inserts": [
+          {
+            "street_name": "Grote Markt",
+            "house_number": "3",
+            "postal_code": "2800",
+            "municipality": "Mechelen",
+            "full_address": "Grote Markt 3, 2800 Mechelen"
+          },
+          {
+            "street_name": "Kapelstraat",
+            "house_number": "12",
+            "postal_code": "3500",
+            "municipality": "Hasselt",
+            "full_address": "Kapelstraat 12, 3500 Hasselt"
+          }
+        ],
+        "updates": [],
+        "deletes": [
+          {
+            "id": "cccccccc-cccc-cccc-cccc-cccccccccccc",
+            "full_address": "Sint-Pietersnieuwstraat 45, 9000 Gent"
+          },
+          {
+            "id": "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee",
+            "full_address": "Bondgenotenlaan 101, 3000 Leuven"
+          }
+        ]
+      },
+      "contact_points": {
+        "inserts": [
+          {
+            "email": "reservations@ecolodgemechelen.be",
+            "telephone": "+32 15 123 4567",
+            "website": "https://ecolodgemechelen.be",
+            "contact_type": "reception"
+          },
+          {
+            "email": "booking@citylofthasselt.be",
+            "telephone": "+32 11 234 5678",
+            "website": "https://citylofthasselt.be",
+            "contact_type": "booking"
+          }
+        ],
+        "updates": [
+          {
+            "id": "2b2b2b2b-2b2b-2b2b-2b2b-2b2b2b2b2b2b",
+            "changes": {
+              "email": {
+                "old": "welcome@cozybnbantwerp.be",
+                "new": "info@cozyboutiquebnb.be"
+              },
+              "telephone": {
+                "old": "+32 3 234 5678",
+                "new": "+32 3 234 9999"
+              },
+              "website": {
+                "old": "https://cozybnbantwerp.be",
+                "new": "https://cozyboutiquebnb.be"
+              }
+            }
+          }
+        ],
+        "deletes": [
+          {
+            "id": "3c3c3c3c-3c3c-3c3c-3c3c-3c3c3c3c3c3c",
+            "email": "booking@modernapartmentghent.be"
+          },
+          {
+            "id": "5e5e5e5e-5e5e-5e5e-5e5e-5e5e5e5e5e5e",
+            "email": "concierge@luxuryvillaleuven.be"
+          }
+        ]
+      },
+      "geometries": {
+        "inserts": [
+          {
+            "latitude": 51.0280,
+            "longitude": 4.4778,
+            "geometry_type": "Point"
+          },
+          {
+            "latitude": 50.9301,
+            "longitude": 5.3378,
+            "geometry_type": "Point"
+          }
+        ],
+        "updates": [],
+        "deletes": [
+          {
+            "id": "c3c3c3c3-c3c3-c3c3-c3c3-c3c3c3c3c3c3",
+            "latitude": 51.0543,
+            "longitude": 3.7174
+          },
+          {
+            "id": "e5e5e5e5-e5e5-e5e5-e5e5-e5e5e5e5e5e5",
+            "latitude": 50.8798,
+            "longitude": 4.7005
+          }
+        ]
+      },
+      "identifiers": {
+        "inserts": [
+          {
+            "identifier_value": "TVL006",
+            "identifier_type": "tourism_flanders_id",
+            "related_entity_type": "logies"
+          },
+          {
+            "identifier_value": "TVL007",
+            "identifier_type": "tourism_flanders_id",
+            "related_entity_type": "logies"
+          }
+        ],
+        "updates": [],
+        "deletes": [
+          {
+            "id": "3c3c3c3c-3c3c-3c3c-3c3c-3c3c3c3c3c3c",
+            "identifier_value": "TVL003"
+          },
+          {
+            "id": "5e5e5e5e-5e5e-5e5e-5e5e-5e5e5e5e5e5e",
+            "identifier_value": "TVL005"
+          }
+        ]
+      }
+    },
+    "summary": {
+      "total_inserts": 8,
+      "total_updates": 4,
+      "total_deletes": 10,
+      "total_changes": 22
+    }
+  },
+  "test_baseline_to_baseline": {
+    "description": "Baseline to baseline comparison should show no changes",
+    "expected_changes": {
+      "logies": {"inserts": [], "updates": [], "deletes": []},
+      "addresses": {"inserts": [], "updates": [], "deletes": []},
+      "contact_points": {"inserts": [], "updates": [], "deletes": []},
+      "geometries": {"inserts": [], "updates": [], "deletes": []},
+      "identifiers": {"inserts": [], "updates": [], "deletes": []}
+    },
+    "summary": {
+      "total_inserts": 0,
+      "total_updates": 0,
+      "total_deletes": 0,
+      "total_changes": 0
+    }
+  }
+}

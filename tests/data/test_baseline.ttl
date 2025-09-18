@@ -1,0 +1,190 @@
+@prefix logies: <https://data.vlaanderen.be/ns/logies#> .
+@prefix locn: <http://www.w3.org/ns/locn#> .
+@prefix schema: <http://schema.org/> .
+@prefix adms: <http://www.w3.org/ns/adms#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix geo: <http://www.w3.org/2003/01/geo/wgs84_pos#> .
+
+# Test baseline TTL file matching the test_master database
+# Contains 5 accommodations with complete related data
+
+# =====================================================
+# LOGIES (Accommodations)
+# =====================================================
+
+<https://data.vlaanderen.be/id/logies/test-hotel-1> a logies:Logies ;
+    rdfs:label "Test Hotel Brussels"@nl ;
+    schema:description "Comfortable hotel in the heart of Brussels"@nl ;
+    logies:aantalSlaapplaatsen "4"^^<http://www.w3.org/2001/XMLSchema#int> ;
+    logies:aantalVerhuurEenheden "1"^^<http://www.w3.org/2001/XMLSchema#int> ;
+    locn:address <https://data.vlaanderen.be/id/adres/test-address-1> ;
+    schema:contactPoint <https://data.vlaanderen.be/id/contactpunt/test-contact-1> ;
+    locn:location <https://data.vlaanderen.be/id/geometrie/test-geometry-1> ;
+    adms:identifier <https://data.vlaanderen.be/id/identificator/test-identifier-1> .
+
+<https://data.vlaanderen.be/id/logies/test-bnb-1> a logies:Logies ;
+    rdfs:label "Cozy B&B Antwerp"@nl ;
+    schema:description "Charming bed and breakfast in historic Antwerp"@nl ;
+    logies:aantalSlaapplaatsen "2"^^<http://www.w3.org/2001/XMLSchema#int> ;
+    logies:aantalVerhuurEenheden "1"^^<http://www.w3.org/2001/XMLSchema#int> ;
+    locn:address <https://data.vlaanderen.be/id/adres/test-address-2> ;
+    schema:contactPoint <https://data.vlaanderen.be/id/contactpunt/test-contact-2> ;
+    locn:location <https://data.vlaanderen.be/id/geometrie/test-geometry-2> ;
+    adms:identifier <https://data.vlaanderen.be/id/identificator/test-identifier-2> .
+
+<https://data.vlaanderen.be/id/logies/test-apartment-1> a logies:Logies ;
+    rdfs:label "Modern Apartment Ghent"@nl ;
+    schema:description "Contemporary apartment near Ghent University"@nl ;
+    logies:aantalSlaapplaatsen "6"^^<http://www.w3.org/2001/XMLSchema#int> ;
+    logies:aantalVerhuurEenheden "1"^^<http://www.w3.org/2001/XMLSchema#int> ;
+    locn:address <https://data.vlaanderen.be/id/adres/test-address-3> ;
+    schema:contactPoint <https://data.vlaanderen.be/id/contactpunt/test-contact-3> ;
+    locn:location <https://data.vlaanderen.be/id/geometrie/test-geometry-3> ;
+    adms:identifier <https://data.vlaanderen.be/id/identificator/test-identifier-3> .
+
+<https://data.vlaanderen.be/id/logies/test-hostel-1> a logies:Logies ;
+    rdfs:label "Budget Hostel Bruges"@nl ;
+    schema:description "Affordable accommodation for backpackers"@nl ;
+    logies:aantalSlaapplaatsen "8"^^<http://www.w3.org/2001/XMLSchema#int> ;
+    logies:aantalVerhuurEenheden "2"^^<http://www.w3.org/2001/XMLSchema#int> ;
+    locn:address <https://data.vlaanderen.be/id/adres/test-address-4> ;
+    schema:contactPoint <https://data.vlaanderen.be/id/contactpunt/test-contact-4> ;
+    locn:location <https://data.vlaanderen.be/id/geometrie/test-geometry-4> ;
+    adms:identifier <https://data.vlaanderen.be/id/identificator/test-identifier-4> .
+
+<https://data.vlaanderen.be/id/logies/test-villa-1> a logies:Logies ;
+    rdfs:label "Luxury Villa Leuven"@nl ;
+    schema:description "Exclusive villa with premium amenities"@nl ;
+    logies:aantalSlaapplaatsen "10"^^<http://www.w3.org/2001/XMLSchema#int> ;
+    logies:aantalVerhuurEenheden "1"^^<http://www.w3.org/2001/XMLSchema#int> ;
+    locn:address <https://data.vlaanderen.be/id/adres/test-address-5> ;
+    schema:contactPoint <https://data.vlaanderen.be/id/contactpunt/test-contact-5> ;
+    locn:location <https://data.vlaanderen.be/id/geometrie/test-geometry-5> ;
+    adms:identifier <https://data.vlaanderen.be/id/identificator/test-identifier-5> .
+
+# =====================================================
+# ADDRESSES
+# =====================================================
+
+<https://data.vlaanderen.be/id/adres/test-address-1> a locn:Address ;
+    locn:thoroughfare "Grand Place" ;
+    adms:addressId "1" ;
+    locn:postCode "1000" ;
+    locn:adminUnitL2 "Brussels" ;
+    locn:fullAddress "Grand Place 1, 1000 Brussels" .
+
+<https://data.vlaanderen.be/id/adres/test-address-2> a locn:Address ;
+    locn:thoroughfare "Grote Markt" ;
+    adms:addressId "15" ;
+    locn:postCode "2000" ;
+    locn:adminUnitL2 "Antwerpen" ;
+    locn:fullAddress "Grote Markt 15, 2000 Antwerpen" .
+
+<https://data.vlaanderen.be/id/adres/test-address-3> a locn:Address ;
+    locn:thoroughfare "Sint-Pietersnieuwstraat" ;
+    adms:addressId "45" ;
+    locn:postCode "9000" ;
+    locn:adminUnitL2 "Gent" ;
+    locn:fullAddress "Sint-Pietersnieuwstraat 45, 9000 Gent" .
+
+<https://data.vlaanderen.be/id/adres/test-address-4> a locn:Address ;
+    locn:thoroughfare "Langestraat" ;
+    adms:addressId "8" ;
+    locn:postCode "8000" ;
+    locn:adminUnitL2 "Brugge" ;
+    locn:fullAddress "Langestraat 8, 8000 Brugge" .
+
+<https://data.vlaanderen.be/id/adres/test-address-5> a locn:Address ;
+    locn:thoroughfare "Bondgenotenlaan" ;
+    adms:addressId "101" ;
+    locn:postCode "3000" ;
+    locn:adminUnitL2 "Leuven" ;
+    locn:fullAddress "Bondgenotenlaan 101, 3000 Leuven" .
+
+# =====================================================
+# CONTACT POINTS
+# =====================================================
+
+<https://data.vlaanderen.be/id/contactpunt/test-contact-1> a schema:ContactPoint ;
+    schema:email "info@testhotelbrussels.be" ;
+    schema:telephone "+32 2 123 4567" ;
+    schema:url "https://testhotelbrussels.be" ;
+    schema:contactType "reception" .
+
+<https://data.vlaanderen.be/id/contactpunt/test-contact-2> a schema:ContactPoint ;
+    schema:email "welcome@cozybnbantwerp.be" ;
+    schema:telephone "+32 3 234 5678" ;
+    schema:url "https://cozybnbantwerp.be" ;
+    schema:contactType "host" .
+
+<https://data.vlaanderen.be/id/contactpunt/test-contact-3> a schema:ContactPoint ;
+    schema:email "booking@modernapartmentghent.be" ;
+    schema:telephone "+32 9 345 6789" ;
+    schema:url "https://modernapartmentghent.be" ;
+    schema:contactType "booking" .
+
+<https://data.vlaanderen.be/id/contactpunt/test-contact-4> a schema:ContactPoint ;
+    schema:email "stay@budgethostelbruges.be" ;
+    schema:telephone "+32 50 456 7890" ;
+    schema:url "https://budgethostelbruges.be" ;
+    schema:contactType "reception" .
+
+<https://data.vlaanderen.be/id/contactpunt/test-contact-5> a schema:ContactPoint ;
+    schema:email "concierge@luxuryvillaleuven.be" ;
+    schema:telephone "+32 16 567 8901" ;
+    schema:url "https://luxuryvillaleuven.be" ;
+    schema:contactType "concierge" .
+
+# =====================================================
+# GEOMETRIES
+# =====================================================
+
+<https://data.vlaanderen.be/id/geometrie/test-geometry-1> a locn:Geometry ;
+    geo:lat "50.8476"^^<http://www.w3.org/2001/XMLSchema#decimal> ;
+    geo:long "4.3572"^^<http://www.w3.org/2001/XMLSchema#decimal> ;
+    locn:geometryType "Point" .
+
+<https://data.vlaanderen.be/id/geometrie/test-geometry-2> a locn:Geometry ;
+    geo:lat "51.2194"^^<http://www.w3.org/2001/XMLSchema#decimal> ;
+    geo:long "4.4025"^^<http://www.w3.org/2001/XMLSchema#decimal> ;
+    locn:geometryType "Point" .
+
+<https://data.vlaanderen.be/id/geometrie/test-geometry-3> a locn:Geometry ;
+    geo:lat "51.0543"^^<http://www.w3.org/2001/XMLSchema#decimal> ;
+    geo:long "3.7174"^^<http://www.w3.org/2001/XMLSchema#decimal> ;
+    locn:geometryType "Point" .
+
+<https://data.vlaanderen.be/id/geometrie/test-geometry-4> a locn:Geometry ;
+    geo:lat "51.2093"^^<http://www.w3.org/2001/XMLSchema#decimal> ;
+    geo:long "3.2247"^^<http://www.w3.org/2001/XMLSchema#decimal> ;
+    locn:geometryType "Point" .
+
+<https://data.vlaanderen.be/id/geometrie/test-geometry-5> a locn:Geometry ;
+    geo:lat "50.8798"^^<http://www.w3.org/2001/XMLSchema#decimal> ;
+    geo:long "4.7005"^^<http://www.w3.org/2001/XMLSchema#decimal> ;
+    locn:geometryType "Point" .
+
+# =====================================================
+# IDENTIFIERS
+# =====================================================
+
+<https://data.vlaanderen.be/id/identificator/test-identifier-1> a adms:Identifier ;
+    skos:notation "TVL001" ;
+    adms:schemeAgency "Tourism Flanders" .
+
+<https://data.vlaanderen.be/id/identificator/test-identifier-2> a adms:Identifier ;
+    skos:notation "TVL002" ;
+    adms:schemeAgency "Tourism Flanders" .
+
+<https://data.vlaanderen.be/id/identificator/test-identifier-3> a adms:Identifier ;
+    skos:notation "TVL003" ;
+    adms:schemeAgency "Tourism Flanders" .
+
+<https://data.vlaanderen.be/id/identificator/test-identifier-4> a adms:Identifier ;
+    skos:notation "TVL004" ;
+    adms:schemeAgency "Tourism Flanders" .
+
+<https://data.vlaanderen.be/id/identificator/test-identifier-5> a adms:Identifier ;
+    skos:notation "TVL005" ;
+    adms:schemeAgency "Tourism Flanders" .
