@@ -153,6 +153,250 @@ Expected results:
 - **geometries**: ~200,000 records
 - **identifiers**: ~32,000 records
 
+## Incremental Update System
+
+The Tourism Database includes a comprehensive incremental update system designed to automatically detect and apply changes from new TTL data sources while maintaining full audit trails and transaction safety.
+
+### System Architecture
+
+The update system consists of 4 integrated phases:
+
+#### Phase 1: Change Tracking Infrastructure
+- **Audit Tables**: Comprehensive changelog tables for all entity types
+- **Trigger System**: Automatic change capture for INSERT/UPDATE/DELETE operations
+- **Run Management**: Update run tracking with timing and statistics
+- **Session Management**: Run ID context for associating changes with update operations
+
+#### Phase 2: Data Source & Download Management
+- **TTL File Handling**: Download, validation, and integrity checking
+- **Metadata Tracking**: File hash comparison and change detection
+- **Temporary Storage**: Safe file management with automatic cleanup
+- **URL Validation**: Source availability checking with retry logic
+
+#### Phase 3: Change Detection Engine
+- **Database Comparison**: Entity-level diff operations between master and new data
+- **Change Classification**: Automatic categorization as INSERT/UPDATE/DELETE
+- **Validation Framework**: Data integrity checking and conflict detection
+- **Temporary Database**: Isolated environment for new data processing
+
+#### Phase 4: Update Processing & Integration
+- **Transaction Safety**: Full rollback capability on errors
+- **Batch Processing**: Configurable batch sizes for performance optimization
+- **Dependency Ordering**: Referential integrity maintenance through proper table ordering
+- **Dry Run Mode**: Safe validation without applying changes
+
+### Update System Components
+
+#### Core Modules
+
+**`update_system/change_tracker.py`**
+- Manages audit logging and update run lifecycle
+- Tracks all database changes with before/after values
+- Provides statistics and reporting capabilities
+
+**`update_system/data_source_manager.py`**
+- Handles TTL file downloads and validation
+- Compares file metadata to detect changes
+- Manages temporary file storage and cleanup
+
+**`update_system/change_detector.py`**
+- Creates temporary databases from TTL files
+- Performs entity-level comparison between databases
+- Generates detailed change reports with operation types
+
+**`update_system/update_processor.py`**
+- Applies incremental changes with transaction safety
+- Supports dry run validation mode
+- Maintains referential integrity through dependency ordering
+- Provides comprehensive error handling and rollback
+
+#### Schema Files
+
+**`sql/changelog_schema.sql`**
+- Change tracking tables (update_runs, *_changelog)
+- Audit views and summary reporting
+- Index optimization for performance
+
+**`sql/triggers.sql`**
+- Automatic audit triggers for all core tables
+- Run ID management functions
+- Utility functions for trigger management
+
+### Usage Examples
+
+#### Basic Update Operation
+```python
+from update_system.data_source_manager import DataSourceManager
+from update_system.change_detector import ChangeDetector
+from update_system.update_processor import UpdateProcessor
+from update_system import DEFAULT_DB_CONFIG
+
+# Configure database connection
+config = DEFAULT_DB_CONFIG.copy()
+config.update({
+    'user': 'your_username',
+    'database': 'tourism_production',
+    'password': 'your_password'
+})
+
+# Download and validate new TTL data
+with DataSourceManager(config) as dsm:
+    file_path, file_hash, file_size = dsm.download_latest_ttl()
+
+    # Check if file has changed
+    if dsm.compare_file_metadata(file_hash, file_size)['has_changes']:
+
+        # Detect changes
+        with ChangeDetector(config) as detector:
+            temp_db = detector.create_temp_database_from_ttl(file_path)
+            changes = detector.compare_databases('tourism_production', temp_db)
+
+            # Apply changes
+            with UpdateProcessor(config) as processor:
+                # Dry run first
+                dry_result = processor.apply_changes(changes, dry_run=True)
+
+                if dry_result.success:
+                    # Apply for real
+                    result = processor.apply_changes(changes, dry_run=False)
+                    print(f"Applied {result.records_processed} changes successfully")
+```
+
+#### Validation-Only Mode
+```python
+# Run change detection without applying updates
+with ChangeDetector(config) as detector:
+    temp_db = detector.create_temp_database_from_ttl('new_data.ttl')
+    changes = detector.compare_databases('tourism_production', temp_db)
+
+    # Validate changes
+    validation = detector.validate_comparison_result(changes)
+
+    if validation['is_valid']:
+        print(f"Detected {changes.total_changes} valid changes")
+        for table, summary in changes.summary.items():
+            print(f"  {table}: {summary}")
+    else:
+        print("Validation errors:", validation['errors'])
+```
+
+#### Monitoring and Statistics
+```python
+with UpdateProcessor(config) as processor:
+    # Get overall statistics
+    stats = processor.get_processing_statistics()
+    print(f"Recent runs: {stats['recent_runs']}")
+    print(f"30-day changes: {stats['total_changes_30_days']}")
+
+    # Get specific run details
+    run_stats = processor.get_processing_statistics(run_id='specific-run-id')
+    print(f"Run status: {run_stats['status']}")
+    print(f"Records processed: {run_stats['total_changes']}")
+```
+
+### Update System Configuration
+
+#### Database Setup
+```bash
+# Install change tracking schema
+psql -d your_database -f sql/changelog_schema.sql
+psql -d your_database -f sql/triggers.sql
+```
+
+#### Environment Configuration
+```python
+# Default configuration in update_system/__init__.py
+DEFAULT_DB_CONFIG = {
+    'host': 'localhost',
+    'port': 5432,
+    'database': 'tourism_flanders_corrected',
+    'user': 'postgres',
+    'password': ''
+}
+
+TOURISM_DATA_SOURCE = {
+    'current_file_url': 'https://data.vlaanderen.be/sparql-endpoint/tourism/data.ttl',
+    'download_timeout': 300,
+    'max_retries': 3
+}
+```
+
+### Testing Framework
+
+The update system includes comprehensive tests for all components:
+
+```bash
+# Run individual phase tests
+python3 tests/test_change_tracker.py       # Phase 1 tests
+python3 tests/test_data_source_manager.py  # Phase 2 tests
+python3 tests/test_change_detector.py      # Phase 3 tests
+python3 tests/test_update_processor.py     # Phase 4 tests
+
+# Test data located in tests/data/
+# - test_baseline.ttl: Baseline dataset for comparison
+# - test_updates_simple.ttl: Simple change scenarios
+```
+
+### Performance Characteristics
+
+#### Change Detection Performance
+- **Database Comparison**: ~30-60 seconds for full dataset
+- **TTL Import**: ~10-20 minutes for temporary database creation
+- **Memory Usage**: ~4-8GB during peak processing
+
+#### Update Processing Performance
+- **Batch Size**: Configurable (default: 100 records per batch)
+- **Transaction Speed**: ~1000-5000 changes per minute
+- **Rollback Time**: <5 seconds for complete transaction rollback
+
+### Monitoring and Maintenance
+
+#### Change Tracking Views
+```sql
+-- View recent changes across all tables
+SELECT * FROM recent_changes_view LIMIT 100;
+
+-- Summarize changes by update run
+SELECT * FROM change_summary_by_run ORDER BY started_at DESC LIMIT 10;
+
+-- Get entity change history
+SELECT * FROM entity_change_history
+WHERE entity_id = 'specific-entity-id'
+ORDER BY changed_at DESC;
+```
+
+#### Maintenance Tasks
+```sql
+-- Clean up old audit records (older than 1 year)
+DELETE FROM logies_changelog WHERE changed_at < NOW() - INTERVAL '1 year';
+DELETE FROM addresses_changelog WHERE changed_at < NOW() - INTERVAL '1 year';
+-- Repeat for other changelog tables
+
+-- Archive completed update runs
+DELETE FROM update_runs
+WHERE status = 'COMPLETED' AND completed_at < NOW() - INTERVAL '6 months';
+```
+
+### Error Handling and Recovery
+
+#### Common Scenarios
+- **Network Issues**: Automatic retry with exponential backoff
+- **Database Conflicts**: Full transaction rollback with detailed error reporting
+- **Schema Mismatches**: Validation before processing with clear error messages
+- **Constraint Violations**: Individual record skipping with continued processing
+
+#### Recovery Procedures
+```sql
+-- Check for failed update runs
+SELECT * FROM update_runs WHERE status = 'FAILED' ORDER BY started_at DESC;
+
+-- Review specific run errors
+SELECT * FROM change_summary_by_run WHERE status = 'FAILED';
+
+-- Manual cleanup if needed
+UPDATE update_runs SET status = 'CANCELLED' WHERE run_id = 'failed-run-id';
+```
+
 ## Scripts and Components
 
 ### Core Files
