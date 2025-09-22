@@ -16,7 +16,7 @@ from unittest.mock import patch, MagicMock
 # Add parent directory for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 
-from corrected_ttl_to_postgres_FIXED import FixedTourismDataImporter
+from ttl_importer import FixedTourismDataImporter
 
 
 class TestTTLParserRegression(unittest.TestCase):

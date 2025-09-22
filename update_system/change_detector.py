@@ -18,7 +18,7 @@ import logging
 # Import our existing parser for TTL processing
 import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from corrected_ttl_to_postgres_FIXED import FixedTourismDataImporter
+from ttl_importer import FixedTourismDataImporter
 
 logger = logging.getLogger(__name__)
 

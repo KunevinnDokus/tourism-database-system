@@ -116,7 +116,7 @@ psql -d tourism_flanders_corrected -f corrected_tourism_schema.sql
 ### Step 2: Data Import
 ```bash
 # Run the enhanced data import script
-python3 corrected_ttl_to_postgres_ENHANCED.py \
+python3 ttl_importer.py \
     --ttl-file toeristische-attracties.ttl \
     --db-name tourism_flanders_corrected \
     --db-user your_username \
@@ -465,7 +465,7 @@ Complete PostgreSQL schema definition with:
 - Indexes for performance optimization
 - Check constraints for data validation
 
-#### 2. `corrected_ttl_to_postgres_ENHANCED.py`
+#### 2. `ttl_importer.py`
 Enhanced Python parser with key features:
 
 **Key Components:**
@@ -495,7 +495,7 @@ Source RDF/TTL data file (553MB) containing complete Flemish tourism dataset.
 ### Basic Import
 ```bash
 # Import to default database
-python3 corrected_ttl_to_postgres_ENHANCED.py \
+python3 ttl_importer.py \
     --ttl-file toeristische-attracties.ttl \
     --db-name tourism_db
 ```
@@ -503,7 +503,7 @@ python3 corrected_ttl_to_postgres_ENHANCED.py \
 ### Custom Database Connection
 ```bash
 # Import with custom connection parameters
-python3 corrected_ttl_to_postgres_ENHANCED.py \
+python3 ttl_importer.py \
     --ttl-file toeristische-attracties.ttl \
     --db-name production_tourism \
     --db-user tourism_user \
@@ -520,7 +520,7 @@ psql -d tourism_test -f corrected_tourism_schema.sql
 
 # Import subset for testing
 head -n 10000 toeristische-attracties.ttl > sample_data.ttl
-python3 corrected_ttl_to_postgres_ENHANCED.py \
+python3 ttl_importer.py \
     --ttl-file sample_data.ttl \
     --db-name tourism_test
 ```

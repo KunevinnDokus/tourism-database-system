@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-ENHANCED TTL to PostgreSQL importer for Flemish Tourism data
-Includes support for contact_points, geometries, identifiers, and registrations
+TTL to PostgreSQL Importer for Flemish Tourism Data
+Imports tourism data from TTL (Turtle) format into PostgreSQL database
 """
 
 import re
@@ -16,48 +16,30 @@ import logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-class EnhancedTourismDataImporter:
+class FixedTourismDataImporter:
     def __init__(self, db_config: Dict[str, str]):
         self.db_config = db_config
         self.conn = None
         self.cursor = None
 
-        # Storage for parsed entities according to corrected model
+        # Storage for parsed entities - CLEANED UP for minimalism
         self.logies = {}  # Primary entity for accommodations
-        self.tourist_attractions = {}  # Separate from logies
-        self.rental_units = {}  # MANDATORY for logies
-        self.rooms = {}
-        self.facilities = {}
-        self.quality_labels = {}
+        self.tourist_attractions = {}  # Tourist attractions
 
-        # Multilingual text storage
-        self.multilingual_texts = []
-
-        # Supporting entities
+        # Supporting entities (only used ones)
         self.contact_points = {}
         self.addresses = {}
         self.geometries = {}
-        self.registrations = {}  # Now linked to logies, not tourist_attractions
         self.identifiers = {}
-        self.ratings = {}
-        self.media_objects = {}
-        self.tourism_regions = {}
 
-        # Relationship tracking for linking entities
-        self.entity_relationships = []  # [(parent_uri, relationship_type, child_uri)]
-
-        # Relationship mappings
+        # Relationship mappings (only used ones)
         self.logies_addresses = []
         self.logies_geometries = []
         self.logies_contacts = []
-        self.logies_facilities = []
-        self.logies_quality_labels = []
-        self.logies_regions = []
 
         self.attraction_addresses = []
         self.attraction_geometries = []
         self.attraction_contacts = []
-        self.attraction_regions = []
 
     def connect_db(self):
         """Connect to PostgreSQL database"""
@@ -107,10 +89,10 @@ class EnhancedTourismDataImporter:
                 return 'identifier'
             elif 'Address' in rdf_type:
                 return 'address'
-            elif 'ContactPoint' in rdf_type:
-                return 'contact_point'
             elif 'Point' in rdf_type or 'Geometry' in rdf_type:
                 return 'geometry'
+            elif 'ContactPoint' in rdf_type:
+                return 'contact_point'
             elif 'Rating' in rdf_type or 'Review' in rdf_type:
                 return 'rating'
             elif 'Kwaliteitslabel' in rdf_type:
@@ -160,7 +142,7 @@ class EnhancedTourismDataImporter:
         elif '/quality-labels/' in subject_uri:
             return 'quality_label'
 
-        logger.debug(f"Could not classify entity: {subject_uri} with types {rdf_types}")
+        logger.warning(f"Could not classify entity: {subject_uri} with types {rdf_types}")
         return 'unknown'
 
     def parse_multilingual_text(self, text_value: str) -> Tuple[str, str]:
@@ -235,25 +217,86 @@ class EnhancedTourismDataImporter:
             for value in values:
                 clean_value = value.strip('"<>')
 
-                if 'name' in predicate.lower():
+                if 'name' in predicate.lower() and 'alternative' not in predicate.lower():
                     if not logies_data['name']:  # Take first name
                         logies_data['name'] = self.parse_multilingual_text(value)[0]
+                elif 'alternativeName' in predicate or 'altLabel' in predicate:
+                    if not logies_data['alternative_name']:
+                        logies_data['alternative_name'] = self.parse_multilingual_text(value)[0]
+                elif 'description' in predicate or 'comment' in predicate:
+                    if not logies_data['description']:
+                        logies_data['description'] = self.parse_multilingual_text(value)[0]
                 elif 'aantalSlaapplaatsen' in predicate:
                     try:
-                        logies_data['sleeping_places'] = int(clean_value)
-                    except ValueError:
+                        # FIXED: Handle XML Schema datatype format "4"^^<type>
+                        numeric_value = value.split('^^')[0].strip('"')
+                        logies_data['sleeping_places'] = int(numeric_value)
+                    except (ValueError, IndexError):
                         pass
                 elif 'aantalVerhuureenheden' in predicate:
                     try:
-                        logies_data['rental_units_count'] = int(clean_value)
-                    except ValueError:
+                        # FIXED: Handle XML Schema datatype format "1"^^<type>
+                        numeric_value = value.split('^^')[0].strip('"')
+                        logies_data['rental_units_count'] = int(numeric_value)
+                    except (ValueError, IndexError):
                         pass
+                # Process relationships
+                elif 'address' in predicate.lower() or 'onthaalAdres' in predicate:
+                    address_id = self.extract_uuid_from_uri(clean_value)
+                    self.logies_addresses.append({'logies_id': entity_id, 'address_id': address_id})
+                elif 'contactPoint' in predicate:
+                    contact_id = self.extract_uuid_from_uri(clean_value)
+                    self.logies_contacts.append({'logies_id': entity_id, 'contact_id': contact_id})
+                elif 'location' in predicate or 'onthaalLocatie' in predicate:
+                    geometry_id = self.extract_uuid_from_uri(clean_value)
+                    self.logies_geometries.append({'logies_id': entity_id, 'geometry_id': geometry_id})
 
         # Only save if we have at least a name
         if logies_data['name']:
             self.logies[entity_id] = logies_data
         else:
-            logger.debug(f"Logies {entity_id} has no name, skipping")
+            logger.warning(f"Logies {entity_id} has no name, skipping")
+
+    def process_tourist_attraction(self, entity_id: str, subject_uri: str, properties: Dict[str, List[str]]):
+        """Process TouristAttraction entity"""
+        attraction_data = {
+            'id': entity_id,
+            'uri': subject_uri,
+            'name': None,
+            'alternative_name': None,
+            'description': None,
+            'category': None
+        }
+
+        for predicate, values in properties.items():
+            for value in values:
+                clean_value = value.strip('"<>')
+
+                if 'name' in predicate.lower() and 'alternative' not in predicate.lower():
+                    if not attraction_data['name']:
+                        attraction_data['name'] = self.parse_multilingual_text(value)[0]
+                elif 'alternativeName' in predicate or 'altLabel' in predicate:
+                    if not attraction_data['alternative_name']:
+                        attraction_data['alternative_name'] = self.parse_multilingual_text(value)[0]
+                elif 'description' in predicate or 'comment' in predicate:
+                    if not attraction_data['description']:
+                        attraction_data['description'] = self.parse_multilingual_text(value)[0]
+                # Process relationships
+                elif 'address' in predicate.lower():
+                    address_id = self.extract_uuid_from_uri(clean_value)
+                    self.attraction_addresses.append({'attraction_id': entity_id, 'address_id': address_id})
+                elif 'contactPoint' in predicate:
+                    contact_id = self.extract_uuid_from_uri(clean_value)
+                    self.attraction_contacts.append({'attraction_id': entity_id, 'contact_id': contact_id})
+                elif 'location' in predicate:
+                    geometry_id = self.extract_uuid_from_uri(clean_value)
+                    self.attraction_geometries.append({'attraction_id': entity_id, 'geometry_id': geometry_id})
+
+        # Only save if we have at least a name
+        if attraction_data['name']:
+            self.tourist_attractions[entity_id] = attraction_data
+        else:
+            logger.warning(f"TouristAttraction {entity_id} has no name, skipping")
 
     def process_contact_point(self, entity_id: str, subject_uri: str, properties: Dict[str, List[str]]):
         """Process ContactPoint entity"""
@@ -271,12 +314,18 @@ class EnhancedTourismDataImporter:
             for value in values:
                 clean_value = value.strip('"<>')
 
-                if 'telephone' in predicate.lower():
-                    contact_data['telephone'] = clean_value.replace('tel:', '')
+                if 'telephone' in predicate.lower() or 'phone' in predicate.lower():
+                    if not contact_data['telephone']:
+                        contact_data['telephone'] = clean_value
                 elif 'email' in predicate.lower():
-                    contact_data['email'] = clean_value.replace('mailto:', '')
-                elif 'page' in predicate.lower() or 'url' in predicate.lower():
-                    contact_data['website'] = clean_value
+                    if not contact_data['email']:
+                        contact_data['email'] = clean_value
+                elif 'website' in predicate.lower() or 'url' in predicate.lower():
+                    if not contact_data['website']:
+                        contact_data['website'] = clean_value
+                elif 'fax' in predicate.lower():
+                    if not contact_data['fax']:
+                        contact_data['fax'] = clean_value
 
         self.contact_points[entity_id] = contact_data
 
@@ -296,12 +345,12 @@ class EnhancedTourismDataImporter:
             for value in values:
                 clean_value = value.strip('"<>')
 
-                if 'lat' in predicate.lower():
+                if 'lat' in predicate.lower() and 'latitude' not in predicate.lower():
                     try:
                         geometry_data['latitude'] = float(clean_value)
                     except ValueError:
                         pass
-                elif 'long' in predicate.lower():
+                elif 'long' in predicate.lower() or 'lng' in predicate.lower():
                     try:
                         geometry_data['longitude'] = float(clean_value)
                     except ValueError:
@@ -310,89 +359,13 @@ class EnhancedTourismDataImporter:
                     geometry_data['wkt_geometry'] = clean_value
                 elif 'asGML' in predicate:
                     geometry_data['gml_geometry'] = clean_value
+                elif 'Point' in value:
+                    geometry_data['geometry_type'] = 'Point'
 
         self.geometries[entity_id] = geometry_data
 
-    def process_identifier(self, entity_id: str, subject_uri: str, properties: Dict[str, List[str]]):
-        """Process Identifier entity"""
-        identifier_data = {
-            'id': entity_id,
-            'uri': subject_uri,
-            'identifier_value': None,
-            'notation': None,
-            'identifier_type': None,
-            'schema_agency': None,
-            'related_entity_id': None,
-            'related_entity_type': None
-        }
-
-        for predicate, values in properties.items():
-            for value in values:
-                clean_value = value.strip('"<>')
-
-                if 'notation' in predicate.lower():
-                    identifier_data['notation'] = clean_value
-                    if not identifier_data['identifier_value']:
-                        identifier_data['identifier_value'] = clean_value
-                elif 'schemaAgency' in predicate:
-                    identifier_data['schema_agency'] = clean_value
-                elif 'creator' in predicate:
-                    identifier_data['identifier_type'] = 'official'
-
-        # Ensure identifier_type has a default value if not set
-        if not identifier_data['identifier_type']:
-            if identifier_data['schema_agency']:
-                identifier_data['identifier_type'] = 'official'
-            else:
-                identifier_data['identifier_type'] = 'system'
-
-        self.identifiers[entity_id] = identifier_data
-
-    def process_registration(self, entity_id: str, subject_uri: str, properties: Dict[str, List[str]]):
-        """Process Registration entity"""
-        registration_data = {
-            'id': entity_id,
-            'uri': subject_uri,
-            'logies_id': None,
-            'registration_type': None,
-            'registration_status': None,
-            'registration_number': None,
-            'valid_from': None,
-            'valid_until': None
-        }
-
-        for predicate, values in properties.items():
-            for value in values:
-                clean_value = value.strip('"<>')
-
-                if 'registratieStatus' in predicate:
-                    registration_data['registration_status'] = clean_value
-                elif 'type' in predicate and not registration_data['registration_type']:
-                    registration_data['registration_type'] = clean_value
-
-        self.registrations[entity_id] = registration_data
-
-    def capture_relationships(self, subject_uri: str, properties: Dict[str, List[str]]):
-        """Capture entity relationships for later linking"""
-        relationship_predicates = {
-            'http://www.w3.org/ns/adms#identifier': 'identifier',
-            'http://schema.org/contactPoint': 'contact_point',
-            'http://www.w3.org/ns/locn#location': 'geometry',
-            'http://www.w3.org/ns/locn#address': 'address',
-            'https://data.vlaanderen.be/ns/logies#heeftRegistratie': 'registration',
-            'http://schema.org/starRating': 'rating'
-        }
-
-        for predicate, values in properties.items():
-            if predicate in relationship_predicates:
-                relationship_type = relationship_predicates[predicate]
-                for value in values:
-                    child_uri = value.strip('<>')
-                    self.entity_relationships.append((subject_uri, relationship_type, child_uri))
-                    logger.debug(f"Captured relationship: {subject_uri} -> {relationship_type} -> {child_uri}")
-
     def process_entity(self, subject_uri: str, properties: Dict[str, List[str]]):
-        """ENHANCED: Process a single entity and its properties"""
+        """Process a single entity and its properties"""
         entity_id = self.extract_uuid_from_uri(subject_uri)
 
         # Extract RDF types
@@ -402,32 +375,31 @@ class EnhancedTourismDataImporter:
 
         entity_type = self.detect_entity_type(subject_uri, rdf_types)
 
-        # ENHANCED: Capture relationships before processing entity
-        self.capture_relationships(subject_uri, properties)
-
-        # ENHANCED: Process based on entity type with additional handlers
+        # Process based on entity type
         if entity_type == 'logies':
             self.process_logies(entity_id, subject_uri, properties)
+        elif entity_type == 'tourist_attraction':
+            self.process_tourist_attraction(entity_id, subject_uri, properties)
         elif entity_type == 'address':
             self.process_address(entity_id, subject_uri, properties)
         elif entity_type == 'contact_point':
             self.process_contact_point(entity_id, subject_uri, properties)
         elif entity_type == 'geometry':
             self.process_geometry(entity_id, subject_uri, properties)
-        elif entity_type == 'identifier':
-            self.process_identifier(entity_id, subject_uri, properties)
-        elif entity_type == 'registration':
-            self.process_registration(entity_id, subject_uri, properties)
+        # Add other entity types as needed
         else:
             logger.debug(f"Skipping entity type: {entity_type}")
 
     def parse_ttl_file(self, file_path: str):
-        """Parse TTL file and extract entities"""
+        """Parse TTL file and extract entities - FIXED to handle interleaved entities"""
         logger.info(f"Starting to parse {file_path}")
-        current_subject = None
-        current_properties = {}
+
+        # FIXED: Collect ALL triples first, then process entities
+        all_entity_properties = {}
 
         try:
+            # First pass: Collect all triples for all entities
+            logger.info("First pass: Collecting all triples...")
             with open(file_path, 'r', encoding='utf-8') as f:
                 for line_num, line in enumerate(f, 1):
                     line = line.strip()
@@ -442,76 +414,50 @@ class EnhancedTourismDataImporter:
                             predicate = parts[1].strip('<>')
                             obj_part = parts[2].rstrip(' .')
 
-                            # Process current subject if we encounter a new one
-                            if subject != current_subject:
-                                if current_subject:
-                                    self.process_entity(current_subject, current_properties)
-                                current_subject = subject
-                                current_properties = {}
+                            # Add to entity properties
+                            if subject not in all_entity_properties:
+                                all_entity_properties[subject] = {}
 
-                            # Add to current properties
-                            if predicate not in current_properties:
-                                current_properties[predicate] = []
-                            current_properties[predicate].append(obj_part)
+                            if predicate not in all_entity_properties[subject]:
+                                all_entity_properties[subject][predicate] = []
+                            all_entity_properties[subject][predicate].append(obj_part)
 
-                # Process final entity
-                if current_subject:
-                    self.process_entity(current_subject, current_properties)
+                    if line_num % 100000 == 0:
+                        logger.info(f"Processed {line_num:,} lines...")
+
+            logger.info(f"First pass complete. Found {len(all_entity_properties):,} entities")
+
+            # Second pass: Process all entities with complete property sets
+            logger.info("Second pass: Processing entities...")
+            processed_count = 0
+            for subject_uri, properties in all_entity_properties.items():
+                self.process_entity(subject_uri, properties)
+                processed_count += 1
+
+                if processed_count % 10000 == 0:
+                    logger.info(f"Processed {processed_count:,} entities...")
+
+            logger.info(f"TTL parsing completed. Processed {processed_count:,} entities")
 
         except Exception as e:
             logger.error(f"Error parsing TTL file: {e}")
             raise
 
-        logger.info("TTL parsing completed")
-
-    def apply_entity_relationships(self):
-        """Apply captured relationships to link entities"""
-        logger.info(f"Applying {len(self.entity_relationships)} entity relationships")
-
-        for parent_uri, relationship_type, child_uri in self.entity_relationships:
-            parent_id = self.extract_uuid_from_uri(parent_uri)
-            child_id = self.extract_uuid_from_uri(child_uri)
-
-            # Determine parent entity type from URI
-            parent_type = self.determine_entity_type_from_uri(parent_uri)
-
-            if relationship_type == 'identifier' and child_id in self.identifiers:
-                # Link identifier to its parent entity
-                self.identifiers[child_id]['related_entity_id'] = parent_id
-                self.identifiers[child_id]['related_entity_type'] = parent_type
-                logger.debug(f"Linked identifier {child_id} to {parent_type} {parent_id}")
-
-    def determine_entity_type_from_uri(self, uri: str) -> str:
-        """Determine entity type from URI pattern"""
-        if '/tourist-attractions/' in uri or '/logies/' in uri:
-            return 'logies'
-        elif '/addresses/' in uri:
-            return 'address'
-        elif '/geometries/' in uri:
-            return 'geometry'
-        elif '/contact-points/' in uri:
-            return 'contact_point'
-        elif '/registrations/' in uri:
-            return 'registration'
-        else:
-            return 'unknown'
-
     def save_to_database(self):
-        """ENHANCED: Save all entities to database"""
+        """Save all entities to database"""
         logger.info("Starting database import")
 
         try:
-            # Apply relationships to link entities before saving
-            self.apply_entity_relationships()
-
-            # Save entities in dependency order
+            # Save entities
             self.save_logies()
+            self.save_tourist_attractions()
             self.save_addresses()
             self.save_contact_points()
             self.save_geometries()
-            self.save_identifiers()  # Now with fixed relationship mapping
-            # Skip registrations for now
-            # self.save_registrations()
+
+            # Save relationships
+            self.save_logies_relationships()
+            self.save_attraction_relationships()
 
             self.conn.commit()
             logger.info("Database import completed successfully")
@@ -577,6 +523,30 @@ class EnhancedTourismDataImporter:
                 address_data['full_address'], address_data['province']
             ))
 
+    def save_tourist_attractions(self):
+        """Save TouristAttraction entities to database"""
+        if not self.tourist_attractions:
+            logger.info("No tourist attraction entities to save")
+            return
+
+        logger.info(f"Saving {len(self.tourist_attractions)} tourist attraction entities")
+
+        for attraction_data in self.tourist_attractions.values():
+            self.cursor.execute("""
+                INSERT INTO tourist_attractions (id, uri, name, alternative_name, description, category)
+                VALUES (%s, %s, %s, %s, %s, %s)
+                ON CONFLICT (id) DO UPDATE SET
+                    uri = EXCLUDED.uri,
+                    name = EXCLUDED.name,
+                    alternative_name = EXCLUDED.alternative_name,
+                    description = EXCLUDED.description,
+                    category = EXCLUDED.category
+            """, (
+                attraction_data['id'], attraction_data['uri'], attraction_data['name'],
+                attraction_data['alternative_name'], attraction_data['description'],
+                attraction_data['category']
+            ))
+
     def save_contact_points(self):
         """Save ContactPoint entities to database"""
         if not self.contact_points:
@@ -627,64 +597,76 @@ class EnhancedTourismDataImporter:
                 geometry_data['wkt_geometry'], geometry_data['gml_geometry']
             ))
 
-    def save_identifiers(self):
-        """Save Identifier entities to database"""
-        if not self.identifiers:
-            logger.info("No identifier entities to save")
-            return
+    def save_logies_relationships(self):
+        """Save Logies relationship tables"""
+        # Save logies_addresses
+        if self.logies_addresses:
+            logger.info(f"Saving {len(self.logies_addresses)} logies-address relationships")
+            for rel in self.logies_addresses:
+                self.cursor.execute("""
+                    INSERT INTO logies_addresses (logies_id, address_id)
+                    VALUES (%s, %s)
+                    ON CONFLICT (logies_id, address_id) DO NOTHING
+                """, (rel['logies_id'], rel['address_id']))
 
-        logger.info(f"Saving {len(self.identifiers)} identifier entities")
+        # Save logies_contacts
+        if self.logies_contacts:
+            logger.info(f"Saving {len(self.logies_contacts)} logies-contact relationships")
+            for rel in self.logies_contacts:
+                self.cursor.execute("""
+                    INSERT INTO logies_contacts (logies_id, contact_id)
+                    VALUES (%s, %s)
+                    ON CONFLICT (logies_id, contact_id) DO NOTHING
+                """, (rel['logies_id'], rel['contact_id']))
 
-        for identifier_data in self.identifiers.values():
-            self.cursor.execute("""
-                INSERT INTO identifiers (id, uri, identifier_value, notation, identifier_type, schema_agency, related_entity_id, related_entity_type)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-                ON CONFLICT (id) DO UPDATE SET
-                    uri = EXCLUDED.uri,
-                    identifier_value = EXCLUDED.identifier_value,
-                    notation = EXCLUDED.notation,
-                    identifier_type = EXCLUDED.identifier_type,
-                    schema_agency = EXCLUDED.schema_agency,
-                    related_entity_id = EXCLUDED.related_entity_id,
-                    related_entity_type = EXCLUDED.related_entity_type
-            """, (
-                identifier_data['id'], identifier_data['uri'], identifier_data['identifier_value'],
-                identifier_data['notation'], identifier_data['identifier_type'],
-                identifier_data['schema_agency'], identifier_data['related_entity_id'],
-                identifier_data['related_entity_type']
-            ))
+        # Save logies_geometries
+        if self.logies_geometries:
+            logger.info(f"Saving {len(self.logies_geometries)} logies-geometry relationships")
+            for rel in self.logies_geometries:
+                self.cursor.execute("""
+                    INSERT INTO logies_geometries (logies_id, geometry_id)
+                    VALUES (%s, %s)
+                    ON CONFLICT (logies_id, geometry_id) DO NOTHING
+                """, (rel['logies_id'], rel['geometry_id']))
 
-    def save_registrations(self):
-        """Save Registration entities to database"""
-        if not self.registrations:
-            logger.info("No registration entities to save")
-            return
 
-        logger.info(f"Saving {len(self.registrations)} registration entities")
+    def save_attraction_relationships(self):
+        """Save TouristAttraction relationship tables"""
+        # Save attraction_addresses
+        if self.attraction_addresses:
+            logger.info(f"Saving {len(self.attraction_addresses)} attraction-address relationships")
+            for rel in self.attraction_addresses:
+                self.cursor.execute("""
+                    INSERT INTO attraction_addresses (attraction_id, address_id)
+                    VALUES (%s, %s)
+                    ON CONFLICT (attraction_id, address_id) DO NOTHING
+                """, (rel['attraction_id'], rel['address_id']))
 
-        for registration_data in self.registrations.values():
-            self.cursor.execute("""
-                INSERT INTO registrations (id, uri, logies_id, registration_type, registration_status, registration_number, valid_from, valid_until)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-                ON CONFLICT (id) DO UPDATE SET
-                    uri = EXCLUDED.uri,
-                    logies_id = EXCLUDED.logies_id,
-                    registration_type = EXCLUDED.registration_type,
-                    registration_status = EXCLUDED.registration_status,
-                    registration_number = EXCLUDED.registration_number,
-                    valid_from = EXCLUDED.valid_from,
-                    valid_until = EXCLUDED.valid_until
-            """, (
-                registration_data['id'], registration_data['uri'], registration_data['logies_id'],
-                registration_data['registration_type'], registration_data['registration_status'],
-                registration_data['registration_number'], registration_data['valid_from'],
-                registration_data['valid_until']
-            ))
+        # Save attraction_contacts
+        if self.attraction_contacts:
+            logger.info(f"Saving {len(self.attraction_contacts)} attraction-contact relationships")
+            for rel in self.attraction_contacts:
+                self.cursor.execute("""
+                    INSERT INTO attraction_contacts (attraction_id, contact_id)
+                    VALUES (%s, %s)
+                    ON CONFLICT (attraction_id, contact_id) DO NOTHING
+                """, (rel['attraction_id'], rel['contact_id']))
+
+        # Save attraction_geometries
+        if self.attraction_geometries:
+            logger.info(f"Saving {len(self.attraction_geometries)} attraction-geometry relationships")
+            for rel in self.attraction_geometries:
+                self.cursor.execute("""
+                    INSERT INTO attraction_geometries (attraction_id, geometry_id)
+                    VALUES (%s, %s)
+                    ON CONFLICT (attraction_id, geometry_id) DO NOTHING
+                """, (rel['attraction_id'], rel['geometry_id']))
+
 
 
 def main():
     """Main function"""
-    parser = argparse.ArgumentParser(description='Import Flemish Tourism TTL data into PostgreSQL (ENHANCED Schema)')
+    parser = argparse.ArgumentParser(description='Import Flemish Tourism TTL data into PostgreSQL database')
     parser.add_argument('--ttl-file', required=True, help='Path to the TTL file')
     parser.add_argument('--db-host', default='localhost', help='Database host')
     parser.add_argument('--db-port', default='5432', help='Database port')
@@ -702,7 +684,7 @@ def main():
         'password': args.db_password
     }
 
-    importer = EnhancedTourismDataImporter(db_config)
+    importer = FixedTourismDataImporter(db_config)
 
     try:
         importer.connect_db()
