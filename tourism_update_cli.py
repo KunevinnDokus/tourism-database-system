@@ -79,7 +79,7 @@ def create_orchestration_config(args) -> OrchestrationConfig:
         db_config['password'] = args.db_password
 
     # Source URL
-    source_url = args.source_url or TOURISM_DATA_SOURCE['current_file_url']
+    source_url = getattr(args, 'source_url', None) or TOURISM_DATA_SOURCE['current_file_url']
 
     # Create configuration
     config = create_default_config(db_config, source_url)

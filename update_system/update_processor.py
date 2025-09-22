@@ -125,7 +125,7 @@ class UpdateProcessor:
             logger.info(f"Starting update processing (run_id: {run_id}, dry_run: {dry_run})")
 
             # Process changes by table in dependency order
-            table_order = ['identifiers', 'geometries', 'contact_points', 'addresses', 'logies']
+            table_order = ['identifiers', 'geometries', 'contact_points', 'addresses', 'logies', 'tourist_attractions']
 
             for table_name in table_order:
                 if table_name not in change_result.changes_by_table:

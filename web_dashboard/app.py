@@ -316,9 +316,40 @@ def api_database_stats():
                     for row in cur.fetchall()
                 ]
 
+                # Entity counts
+                cur.execute("""
+                    SELECT
+                        (SELECT COUNT(*) FROM logies) as logies_count,
+                        (SELECT COUNT(*) FROM tourist_attractions) as tourist_attractions_count,
+                        (SELECT COUNT(*) FROM addresses) as addresses_count,
+                        (SELECT COUNT(*) FROM contact_points) as contact_points_count,
+                        (SELECT COUNT(*) FROM geometries) as geometries_count,
+                        (SELECT COUNT(*) FROM logies_addresses) as logies_address_links,
+                        (SELECT COUNT(*) FROM logies_contacts) as logies_contact_links,
+                        (SELECT COUNT(*) FROM logies_geometries) as logies_geometry_links,
+                        (SELECT COUNT(*) FROM attraction_addresses) as attraction_address_links,
+                        (SELECT COUNT(*) FROM attraction_contacts) as attraction_contact_links,
+                        (SELECT COUNT(*) FROM attraction_geometries) as attraction_geometry_links
+                """)
+
+                entity_counts = cur.fetchone()
+
                 return jsonify({
                     'table_sizes': table_sizes,
-                    'row_counts': row_counts
+                    'row_counts': row_counts,
+                    'entity_counts': {
+                        'logies': entity_counts[0],
+                        'tourist_attractions': entity_counts[1],
+                        'addresses': entity_counts[2],
+                        'contact_points': entity_counts[3],
+                        'geometries': entity_counts[4],
+                        'logies_address_links': entity_counts[5],
+                        'logies_contact_links': entity_counts[6],
+                        'logies_geometry_links': entity_counts[7],
+                        'attraction_address_links': entity_counts[8],
+                        'attraction_contact_links': entity_counts[9],
+                        'attraction_geometry_links': entity_counts[10]
+                    }
                 })
 
     except Exception as e:
@@ -358,6 +389,65 @@ def emit_real_time_updates():
 
     thread = threading.Thread(target=update_loop, daemon=True)
     thread.start()
+
+
+@app.route('/api/tourist_attractions/stats')
+def api_tourist_attractions_stats():
+    """Get tourist attraction statistics."""
+    try:
+        with psycopg2.connect(**DEFAULT_DB_CONFIG) as conn:
+            with conn.cursor() as cur:
+                # Tourist attraction counts and stats
+                cur.execute("""
+                    SELECT
+                        COUNT(*) as total_attractions,
+                        COUNT(*) FILTER (WHERE alternative_name IS NOT NULL) as with_alternative_names,
+                        COUNT(*) FILTER (WHERE description IS NOT NULL) as with_descriptions,
+                        COUNT(*) FILTER (WHERE category IS NOT NULL) as with_categories
+                    FROM tourist_attractions
+                """)
+
+                stats = cur.fetchone()
+
+                # Get top categories
+                cur.execute("""
+                    SELECT category, COUNT(*) as count
+                    FROM tourist_attractions
+                    WHERE category IS NOT NULL
+                    GROUP BY category
+                    ORDER BY count DESC
+                    LIMIT 10
+                """)
+
+                categories = [{'category': row[0], 'count': row[1]} for row in cur.fetchall()]
+
+                # Get relationship counts
+                cur.execute("""
+                    SELECT
+                        (SELECT COUNT(*) FROM attraction_addresses) as address_links,
+                        (SELECT COUNT(*) FROM attraction_contacts) as contact_links,
+                        (SELECT COUNT(*) FROM attraction_geometries) as geometry_links,
+                        (SELECT COUNT(*) FROM attraction_regions) as region_links
+                """)
+
+                relationships = cur.fetchone()
+
+                return jsonify({
+                    'total_attractions': stats[0],
+                    'with_alternative_names': stats[1],
+                    'with_descriptions': stats[2],
+                    'with_categories': stats[3],
+                    'top_categories': categories,
+                    'relationships': {
+                        'address_links': relationships[0],
+                        'contact_links': relationships[1],
+                        'geometry_links': relationships[2],
+                        'region_links': relationships[3]
+                    }
+                })
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 
 if __name__ == '__main__':

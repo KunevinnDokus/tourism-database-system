@@ -207,6 +207,7 @@ class DataSourceManager:
                 # Count entity types
                 entity_queries = {
                     'logies': 'SELECT (COUNT(?s) AS ?count) WHERE { ?s a <https://data.vlaanderen.be/ns/logies#Logies> . }',
+                    'tourist_attractions': 'SELECT (COUNT(?s) AS ?count) WHERE { ?s a <http://schema.org/TouristAttraction> . }',
                     'addresses': 'SELECT (COUNT(?s) AS ?count) WHERE { ?s a <http://www.w3.org/ns/locn#Address> . }',
                     'contact_points': 'SELECT (COUNT(?s) AS ?count) WHERE { ?s a <http://schema.org/ContactPoint> . }',
                     'geometries': 'SELECT (COUNT(?s) AS ?count) WHERE { ?s a <http://www.w3.org/ns/locn#Geometry> . }',

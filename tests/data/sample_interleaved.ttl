@@ -1,0 +1,37 @@
+# Sample TTL with interleaved entities to test parser robustness
+# This uses the format expected by the parser (URI brackets and proper spacing)
+
+<https://data.toerismevlaanderen.be/id/logies/12345> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://data.vlaanderen.be/ns/logies#Logies> .
+<https://data.toerismevlaanderen.be/id/logies/12345> <http://schema.org/name> "Test Hotel"@nl .
+
+<https://data.toerismevlaanderen.be/id/address/67890> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/ns/locn#Address> .
+<https://data.toerismevlaanderen.be/id/address/67890> <http://www.w3.org/ns/locn#thoroughfare> "Test Street"@nl .
+<https://data.toerismevlaanderen.be/id/address/67890> <http://www.w3.org/ns/locn#locatorDesignator> "123" .
+
+# Properties scattered for same logies entity (this was causing the bug)
+<https://data.toerismevlaanderen.be/id/logies/12345> <https://data.vlaanderen.be/ns/logies#aantalSlaapplaatsen> "4"^^<http://www.w3.org/2001/XMLSchema#integer> .
+<https://data.toerismevlaanderen.be/id/logies/12345> <https://data.vlaanderen.be/ns/logies#aantalVerhuureenheden> "2"^^<http://www.w3.org/2001/XMLSchema#integer> .
+
+<https://data.toerismevlaanderen.be/id/tourist_attraction/54321> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://schema.org/TouristAttraction> .
+<https://data.toerismevlaanderen.be/id/tourist_attraction/54321> <http://schema.org/name> "Test Museum"@nl .
+<https://data.toerismevlaanderen.be/id/tourist_attraction/54321> <http://schema.org/description> "A wonderful test museum"@nl .
+
+# More scattered properties for the hotel
+<https://data.toerismevlaanderen.be/id/logies/12345> <http://schema.org/description> "A lovely test hotel"@nl .
+<https://data.toerismevlaanderen.be/id/logies/12345> <http://schema.org/address> <https://data.toerismevlaanderen.be/id/address/67890> .
+
+<https://data.toerismevlaanderen.be/id/contact/11111> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://schema.org/ContactPoint> .
+<https://data.toerismevlaanderen.be/id/contact/11111> <http://schema.org/telephone> "+32123456789" .
+<https://data.toerismevlaanderen.be/id/contact/11111> <http://schema.org/email> "test@hotel.be" .
+
+# Even more scattered properties
+<https://data.toerismevlaanderen.be/id/logies/12345> <http://schema.org/contactPoint> <https://data.toerismevlaanderen.be/id/contact/11111> .
+
+<https://data.toerismevlaanderen.be/id/geometry/22222> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/ns/locn#Geometry> .
+<https://data.toerismevlaanderen.be/id/geometry/22222> <http://www.w3.org/ns/locn#geometry> "POINT(4.3517 50.8467)"^^<http://www.opengis.net/ont/geosparql#wktLiteral> .
+
+<https://data.toerismevlaanderen.be/id/logies/12345> <http://schema.org/location> <https://data.toerismevlaanderen.be/id/geometry/22222> .
+
+# Tourist attraction relationships
+<https://data.toerismevlaanderen.be/id/tourist_attraction/54321> <http://schema.org/address> <https://data.toerismevlaanderen.be/id/address/67890> .
+<https://data.toerismevlaanderen.be/id/tourist_attraction/54321> <http://schema.org/location> <https://data.toerismevlaanderen.be/id/geometry/22222> .

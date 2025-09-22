@@ -18,7 +18,7 @@ import logging
 # Import our existing parser for TTL processing
 import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from corrected_ttl_to_postgres_ENHANCED import EnhancedTourismDataImporter
+from corrected_ttl_to_postgres_FIXED import FixedTourismDataImporter
 
 logger = logging.getLogger(__name__)
 
@@ -60,7 +60,14 @@ class ChangeDetector:
     """Detects changes between tourism database states."""
 
     # Define the core tables to compare
-    CORE_TABLES = ['logies', 'addresses', 'contact_points', 'geometries', 'identifiers']
+    CORE_TABLES = ['logies', 'tourist_attractions', 'addresses', 'contact_points', 'geometries', 'identifiers']
+
+    # Relationship tables to monitor
+    RELATIONSHIP_TABLES = [
+        'logies_addresses', 'logies_contacts', 'logies_geometries',
+        'logies_quality_labels', 'logies_regions',
+        'attraction_addresses', 'attraction_contacts', 'attraction_geometries', 'attraction_regions'
+    ]
 
     def __init__(self, db_config: Dict[str, Any]):
         """
@@ -132,7 +139,10 @@ class ChangeDetector:
         summary = {}
         total_changes = 0
 
-        for table_name in self.CORE_TABLES:
+        # Compare core entity tables and relationship tables
+        all_tables = self.CORE_TABLES + self.RELATIONSHIP_TABLES
+
+        for table_name in all_tables:
             logger.info(f"Comparing table: {table_name}")
 
             table_changes = self._compare_table(master_db, comparison_db, table_name)
@@ -365,7 +375,7 @@ class ChangeDetector:
         }
 
         # Use our existing enhanced importer
-        importer = EnhancedTourismDataImporter(temp_config)
+        importer = FixedTourismDataImporter(temp_config)
 
         try:
             importer.connect_db()
@@ -373,7 +383,7 @@ class ChangeDetector:
 
             # Parse and import TTL file
             importer.parse_ttl_file(ttl_file_path)
-            importer.apply_entity_relationships()
+            # Relationships are now automatically processed during parsing
             importer.save_to_database()
 
             logger.info("TTL import completed successfully")

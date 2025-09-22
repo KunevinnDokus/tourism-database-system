@@ -247,7 +247,7 @@ class ChangeTracker:
         Returns:
             Dict with table names as keys and lists of changes as values
         """
-        tables = ['logies', 'addresses', 'contact_points', 'geometries', 'identifiers']
+        tables = ['logies', 'tourist_attractions', 'addresses', 'contact_points', 'geometries', 'identifiers']
         changes = {}
 
         try:
@@ -280,7 +280,7 @@ class ChangeTracker:
         Returns:
             Dict with change count summaries
         """
-        tables = ['logies', 'addresses', 'contact_points', 'geometries', 'identifiers']
+        tables = ['logies', 'tourist_attractions', 'addresses', 'contact_points', 'geometries', 'identifiers']
         summary = {
             'total_changes': 0,
             'by_table': {},
@@ -357,7 +357,7 @@ class ChangeTracker:
         Returns:
             Number of records deleted
         """
-        tables = ['logies', 'addresses', 'contact_points', 'geometries', 'identifiers']
+        tables = ['logies', 'tourist_attractions', 'addresses', 'contact_points', 'geometries', 'identifiers']
         total_deleted = 0
 
         try:
